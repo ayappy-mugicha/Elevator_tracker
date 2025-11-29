@@ -1,0 +1,8 @@
+fastapi
+uvinorn[standard]
+sqlalchemy
+pydantic
+python-dotenv
+aiomysql # Mysql接続用
+paho-mqtt # MQTTクライアント接続用
+
