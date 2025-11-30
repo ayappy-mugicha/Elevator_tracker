@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api.routes import router
@@ -6,7 +7,6 @@ from .database import models # models.pyをインポートすることでテー�
 
 # データベースにテーブルが存在しない場合、ここで作成
 # 本番環境ではAlembicなどのマイグレーションツールを推奨
-Base.metadata.create_all(bind=engine) 
 
 # FastAPIアプリケーションのインスタンス化
 app = FastAPI(title="Elevator Monitoring API")

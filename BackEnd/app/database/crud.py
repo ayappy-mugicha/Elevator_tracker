@@ -1,6 +1,6 @@
 
 import select
-from sqlalchemy.ext.asynico import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession
 from .models import ElevatorStatus
 from typing import Dict, Any, List
 

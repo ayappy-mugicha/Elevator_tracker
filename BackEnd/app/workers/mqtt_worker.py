@@ -1,5 +1,5 @@
 from paho.mqtt import client as mqtt_client
-from ..database.crud import create_elevator_status 
+from ..database.crud import create_elevator_status
 from ..database.database import SessionLocal # DBセッションをワーカー内で取得
 from ..core.config import settings
 import json
@@ -22,7 +22,7 @@ def on_message(clinet, userdata, msg):
         db = SessionLocal() # 新しいセッションを開始
         try:
             # CRUD関数を呼び出しDBにデータを保存
-            create_elevator_status(db, data)
+            crud.create_elevator_status(db, data)
             print(f"DBにデータを保存: EID={data['elevator_id']} 階={data['current_floor']} 人数={data['occupancy']} 方向={data['direction']}")
         
         finally:
