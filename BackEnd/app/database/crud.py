@@ -1,10 +1,9 @@
-
 import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from .models import ElevatorStatus
+from . import models
 from typing import Dict, Any, List
 
-async def create_elevator_status(db: AsyncSession, data: Dict[str, Any]) -> ElevatorStatus:
+async def create_elevator_status(db: AsyncSession, data: Dict[str, Any]) -> models.ElevatorStatus:
     """
     MQTTから受信したデータをDBに新規レコードとして保存する。
 
@@ -13,7 +12,7 @@ async def create_elevator_status(db: AsyncSession, data: Dict[str, Any]) -> Elev
     :return: 作成されたデータベースオブジェクト
     """
 
-    db_status = ElevatorStatus(
+    db_status = models.ElevatorStatus(
         # エレベータID
         elevator_id = data.get("elevator_id","E1"),
         # 階層
@@ -30,7 +29,7 @@ async def create_elevator_status(db: AsyncSession, data: Dict[str, Any]) -> Elev
     await db.refresh(db_status)
     return db_status
 
-async def get_latest_elevator_status(db: AsyncSession) -> ElevatorStatus | None:
+async def get_latest_elevator_status(db: AsyncSession) -> models.ElevatorStatus | None:
     """
     データベース内の最新ステータスレコードを1件取得する。
 
@@ -38,20 +37,20 @@ async def get_latest_elevator_status(db: AsyncSession) -> ElevatorStatus | None:
     :return: 最新のElevatorStatus オブジェクト、または存在しない場合はNone
     """
     reslut = await db.execute(
-        select(ElevatorStatus)
-        .order_by(ElevatorStatus.timestamp.desc()) # タイムスタンプでソ降順ソート
+        select(models.ElevatorStatus)
+        .order_by(models.ElevatorStatus.timestamp.desc()) # タイムスタンプでソ降順ソート
         .limit(1)
     )
     return reslut.scalars().first()
 
-def get_recent_status_list(db: AsyncSession, limit: int = 10) -> List[ElevatorStatus]:
+def get_recent_status_list(db: AsyncSession, limit: int = 10) -> List[models.ElevatorStatus]:
     """
     最新から遡って複数のステータスレコードを取得する(グラフ表示などに利用可能)
     """
 
     return(
-        db.query(ElevatorStatus)
-        .order_by(ElevatorStatus.timestamp.desc())
+        db.query(models.ElevatorStatus)
+        .order_by(models.ElevatorStatus.timestamp.desc())
         .limit(limit)
         .all()
     )

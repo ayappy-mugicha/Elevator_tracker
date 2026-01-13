@@ -2,7 +2,7 @@ set -e
 
 PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 # 仮想環境の有効化
-ACTIVATE_VENV="$PROJECT_ROOT/my-venv/bin/activate"
+ACTIVATE_VENV="$PROJECT_ROOT/Elevetor/bin/activate"
 # 実行中のプロセスを追跡するためのPIDファイルを各のするディレクトリ
 PID_DIR="$PROJECT_ROOT/run"
 mkdir -p "$PID_DIR"
@@ -41,7 +41,7 @@ echo "---バックエンドを起動---"
 #仮想環境を有効化
 
 if [ -f "$ACTIVATE_VENV" ]; then
-    echo "仮想環境を有効化"
+    echo "仮想環境を有効化完了"
     . "$ACTIVATE_VENV"
 
 else
@@ -53,7 +53,7 @@ fi
 echo "--MQTTワーカーをバックグラウンドで起動中--"
 (
     cd "$PROJECT_ROOT/BackEnd"
-    python app/workers/mqtt_worker.py $ #2> /dev/null &
+    python app/workers/mqtt_worker.py $ 2> /dev/null &
     echo $! > "$PID_MQTT" #PIDをファイルに保存
 )
 echo ""

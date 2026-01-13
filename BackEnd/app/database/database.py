@@ -1,10 +1,18 @@
 from sqlalchemy.ext.asyncio import create_async_engine , AsyncSession
 # from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
-from ..core.config import settings
+import os
+import sys
+# 1. 自分のいる場所（appフォルダ）の絶対パスを取得
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 一つ上の階層（親フォルダ）のパスを作る
+parent_dir = os.path.dirname(current_dir)
+# 3. Pythonの「探し物リスト」に親フォルダを追加！
+sys.path.append(parent_dir)
+from core import config
 
 # 設定ファイルからDB接続URLを取得
-SQLALCHEMY_DATABASE_URL = settings.DATABASE_URL
+SQLALCHEMY_DATABASE_URL = config.settings.DATABASE_URL
 # SQOLAlchemyエンジンを作成
 engine = create_async_engine(
     SQLALCHEMY_DATABASE_URL,

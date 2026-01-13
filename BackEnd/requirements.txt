@@ -1,8 +1,9 @@
 fastapi
-uvinorn[standard]
+uvicorn
 sqlalchemy
 pydantic
+pydantic-settings
 python-dotenv
 aiomysql # Mysql接続用
 paho-mqtt # MQTTクライアント接続用
-
+cryptography

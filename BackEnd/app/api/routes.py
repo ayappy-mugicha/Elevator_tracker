@@ -1,14 +1,23 @@
 import asyncio
+import os
+import sys
 from fastapi import APIRouter, Depends, WebSocket, HTTPException, WebSocketDisconnect
 from sqlalchemy.orm import Session
-from ..database import crud
-from ..database.database import get_db , SessionLocal
-from ..schemas import ElevatorStatusSchema # Pydanticスキーマをインポート
+# 1. 自分のいる場所（appフォルダ）の絶対パスを取得
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 一つ上の階層（親フォルダ）のパスを作る
+parent_dir = os.path.dirname(current_dir)
+print(parent_dir)
+# 3. Pythonの「探し物リスト」に親フォルダを追加！
+sys.path.append(parent_dir)
+from database import crud ,database
+# from database.database import get_db , SessionLocal
+from schemas import ElevatorStatusSchema # Pydanticスキーマをインポート
 
 router = APIRouter()
 
 @router.get("/latest_status", response_model=ElevatorStatusSchema)
-def read_latest_status_http(db: Session = Depends(get_db)):
+def read_latest_status_http(db: Session = Depends(database.get_db)):
     """ DBから最新のステータスを1件取得し、HTTPで返す (主にデバッグ用 """
     latest_status = crud.get_latest_elevator_status(db)
     if not latest_status:
@@ -30,7 +39,7 @@ async def websocket_endpoint(websocket: WebSocket):
         POLL_INTERBAL = 0.5
 
         while True:
-            db = SessionLocal()
+            db = database.SessionLocal()
             try:
                 # 最新データをDBから取得 (CRUDのread)
                 latest_status = await crud.get_latest_elevator_status(db)

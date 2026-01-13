@@ -1,9 +1,8 @@
 import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .api.routes import router
-from .database.database import engine, Base
-from .database import models # models.pyをインポートすることでテーブル定義を認識させる
+from api import routes
+from database import database, models # models.pyをインポートすることでテーブル定義を認識させる
 
 # データベースにテーブルが存在しない場合、ここで作成
 # 本番環境ではAlembicなどのマイグレーションツールを推奨
@@ -27,7 +26,7 @@ app.add_middleware(
 )
 
 # ルーターをアプリケーションに含める
-app.include_router(router)
+app.include_router(routes.router)
 
 # ルートパス
 @app.get("/")
