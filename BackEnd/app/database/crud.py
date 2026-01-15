@@ -1,4 +1,4 @@
-import select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from . import models
 from typing import Dict, Any, List
@@ -36,10 +36,8 @@ async def get_latest_elevator_status(db: AsyncSession) -> models.ElevatorStatus 
     :param db: データベースセッション
     :return: 最新のElevatorStatus オブジェクト、または存在しない場合はNone
     """
-    reslut = await db.execute(
-        select(models.ElevatorStatus)
-        .order_by(models.ElevatorStatus.timestamp.desc()) # タイムスタンプでソ降順ソート
-        .limit(1)
+    reslut = await db.execute( # DBの関数を使っている。内容はほとんどDBのコマンドと変わらなそう。
+        select(models.ElevatorStatus).order_by(models.ElevatorStatus.timestamp.desc()) # タイムスタンプでソ降順ソート
     )
     return reslut.scalars().first()
 
