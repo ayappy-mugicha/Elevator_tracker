@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import traceback
 from fastapi import APIRouter, Depends, WebSocket, HTTPException, WebSocketDisconnect
 from sqlalchemy.orm import Session
 # 1. 自分のいる場所（appフォルダ）の絶対パスを取得
@@ -68,5 +69,6 @@ async def websocket_endpoint(websocket: WebSocket):
         print("websocketクライアントが切断しました")
     except Exception as e:
         print(f"websocket処理中にエラーが発生: {e}")
+        traceback.print_exc()
     finally:
         await websocket.close()
