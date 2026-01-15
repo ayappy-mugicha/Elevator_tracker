@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api import routes
+from .api import routes
 from database import database, models # models.pyをインポートすることでテーブル定義を認識させる
 
 # データベースにテーブルが存在しない場合、ここで作成
