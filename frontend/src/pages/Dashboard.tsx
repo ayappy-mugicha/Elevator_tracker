@@ -10,14 +10,14 @@ const WS_URL = "ws://localhost:8000/ws/elevator"; // websocketのURL
 
 const Dashboard: React.FC = () => {
     const [status, setStaus] = useState<ElevatorStatus | null> (null);
-    const [isConnected, setIsConneted] = useState(false);
+    const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
         const ws = new WebSocket(WS_URL);
 
         ws.onopen = () => { // 接続状態
             console.log('Websocket接続成功');
-            setIsConneted(true);
+            setIsConnected(true);
         };
 
 
@@ -30,7 +30,7 @@ const Dashboard: React.FC = () => {
         // 切断したとき
         ws.close = () => {
             console.log("websocket接続切断");
-            setIsConneted(false);
+            setIsConnected(false);
         };
 
         ws.onerror = (error) => { // 接続状態のエラー
