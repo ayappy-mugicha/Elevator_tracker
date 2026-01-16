@@ -3,7 +3,7 @@ set -e
 PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 # 仮想環境設定
 VENV_NAME="Elevetor"
-REQUIREMENTS=BackEnd/requirements.txt
+REQUIREMENTS="$PROJECT_ROOT/BackEnd/requirements.txt"
 LOG_DIR="$PROJECT_ROOT/logs" # ログファイル用のディレクトリを定義
 FRONTEND_DATA="$PROJECT_ROOT/frontend/node_modules"
 ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
@@ -20,26 +20,22 @@ PID_REACT="$PID_DIR/react_dev.pid"
 cleanup(){
     echo ""
     echo "システムをシャットダウン中"
+    trap - EXIT
 
-    # PIDファイルからプロセスIDを読み取り、終了させる
-    if [ -f "$PID_MQTT" ]; then
-        kill -TERM -- -$(cat "$PID_MQTT") 2>/dev/null || true
-    fi
-    if [ -f "$PID_FASTAPI" ]; then
-        kill -TERM -- -$(cat "$PID_FASTAPI") 2>/dev/null || true
-    fi
-    if [ -f "$PID_REACT" ]; then
-        kill -TERM -- -$(cat "$PID_REACT") 2>/dev/null || true
-    fi
+    # PIDファイルを使ってプロセスグループごと終了
+    [ -f "$PID_MQTT" ] && kill -TERM -- -$(cat "$PID_MQTT") 2>/dev/null || true
+    [ -f "$PID_FASTAPI" ] && kill -TERM -- -$(cat "$PID_FASTAPI") 2>/dev/null || true
+    [ -f "$PID_REACT" ] && kill -TERM -- -$(cat "$PID_REACT") 2>/dev/null || true
 
     # PIDファイルを削除
     rm -f "$PID_MQTT" "$PID_FASTAPI" "$PID_REACT"
+    kill 0 2>/dev/null
     echo "すべてのプロセスが停止しました"
     exit 0
 }
 
 # crl+C が押されたcleanup関数を呼び出す
-trap 'cleanup' SIGINT
+trap cleanup EXIT
 
 echo "---バックエンドを起動---"
 
@@ -73,16 +69,18 @@ echo "--MQTTワーカーをバックグラウンドで起動中--"
 (
     cd "$PROJECT_ROOT/BackEnd"
     # setsid を使うと新しいプロセスセッションを開始でき、グループ kill が確実になります
-    setsid python app/workers/mqtt_worker.py > "$LOG_DIR/mqtt.log" 2>&1 &
+    setsid python -m app.workers.mqtt_worker > "$LOG_DIR/mqtt.log" 2>&1 &
     echo $! > "$PID_MQTT" #PIDをファイルに保存
 )
 echo ""
 echo "--MQTTワーカー起動完了--"
+sleep 2 # MQTTワーカーの初期化を待機
+
 # FastAPIの起動
 echo "--Fastapi サーバーをバックグラウンドで起動中--"
 (
     cd "$PROJECT_ROOT/BackEnd/"
-    uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/fastapi.log" 2>&1 &
+    setsid uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/fastapi.log" 2>&1 &
     echo $! > "$PID_FASTAPI" # PID をファイルに保存
 )
 echo ""
@@ -120,8 +118,5 @@ echo "起動完了"
 echo "システムが稼働中です。ctrl+Cですべてを停止します"
 echo ""
 
-echo "フロントエンド: http://localhost:3000"
-echo "FastAPIDocs: http://localhost:3000/docs"
-
-# crl+C が押されたcleanup関数を呼び出す
-trap 'cleanup' SIGINT
+# コンソール表示用
+#tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log"
