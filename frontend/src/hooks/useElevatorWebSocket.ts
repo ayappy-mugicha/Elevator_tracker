@@ -2,6 +2,7 @@ import { useState , useEffect, useCallback } from "react";
 
 // 受信するデータ型を定義
 interface ElevatorStatus {
+    elevator_id: string; // エレベーターID
     current_floor: number; // 階層
     occupancy: number; // 人数
     direction: string; // 方向 down up idel

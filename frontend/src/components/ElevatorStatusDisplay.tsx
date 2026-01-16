@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useElevatorWebSocket } from '../hooks/useElevatorWebSocket';
 
 const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
@@ -17,34 +17,79 @@ const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
 
 const ElevatorStatusDisplay: React.FC = () => {
   const { status, isConnected, error } = useElevatorWebSocket();
+  const [showError, setShowError] = useState(false);
 
-  if (error) {
-    return <div style={{ color: 'white', backgroundColor: 'red', padding: '10px' }}>エラー: {error}</div>;
-  }
+  useEffect(() => {
+    if (error) {
+      setShowError(true);
+    }
+  }, [error]);
 
-  if (!isConnected) {
-    return <div style={{ color: 'gray', padding: '10px' }}>サーバーに接続中です...</div>;
-  }
+  const elevator_id = status?.elevator_id ?? '?';
+  const currentFloor = status?.current_floor ?? '-';
+  const occupancy = status?.occupancy ?? '-';
+  const direction = status?.direction ?? 'STOP';
+  const timestamp = status?.timestamp ? new Date(status.timestamp).toLocaleTimeString() : '--:--:--';
 
-  if (!status) {
-    return <div style={{ color: 'orange', padding: '10px' }}>エレベーターのデータを待機中です。</div>;
-  }
-  
-  // 取得したデータを利用して表示
   return (
     <div style={{ 
       textAlign: 'center', 
       fontFamily: 'Arial, sans-serif', 
       padding: '20px', 
       backgroundColor: '#f4f4f4',
-      borderRadius: '8px'
+      borderRadius: '8px',
+      position: 'relative',
+      minWidth: '300px'
     }}>
-      <h1>エレベーター監視システム (E1)</h1>
+      {showError && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#ff4444',
+          color: 'white',
+          padding: '15px 25px',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '15px'
+        }}>
+          <span>エラー: {error}</span>
+          <button 
+            onClick={() => setShowError(false)}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'white',
+              fontSize: '1.2em',
+              cursor: 'pointer',
+              padding: '0 5px'
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      <h1 style={{color: 'black'}}>エレベーター監視システム ({elevator_id})</h1>
+      
+      <div style={{ 
+        fontSize: '0.8em', 
+        color: isConnected ? 'green' : 'orange',
+        marginBottom: '10px',
+        height: '1.2em'
+      }}>
+        {isConnected ? '● 接続済み' : '○ 接続中...'}
+      </div>
+
       <hr />
       
       <div style={{ margin: '30px 0' }}>
-        <p style={{ fontSize: '1.2em', margin: '5px 0' }}>現在の状況:</p>
-        <DirectionIcon direction={status.direction} />
+        <p style={{ fontSize: '2em', margin: '5px 0' ,color: 'black'}}>現在の状況:</p>
+        <DirectionIcon direction={direction} />
       </div>
 
       <div style={{ 
@@ -54,16 +99,17 @@ const ElevatorStatusDisplay: React.FC = () => {
         border: '3px solid #007bff', 
         padding: '20px', 
         display: 'inline-block', 
-        borderRadius: '10px' 
+        borderRadius: '10px',
+        minWidth: '100px'
       }}>
-        {status.current_floor} F
+        {currentFloor} F
       </div>
       
       <div style={{ marginTop: '20px' }}>
-        <p style={{ fontSize: '1.5em' }}>搭乗人数: 
-          <strong style={{ color: '#333' }}> {status.occupancy} 人</strong>
+        <p style={{ fontSize: '1.5em', color: 'black' }}>搭乗人数: 
+          <strong style={{ color: '#333' }}> {occupancy} 人</strong>
         </p>
-        <p style={{ fontSize: '0.8em', color: '#666' }}>最終更新: {new Date(status.timestamp).toLocaleTimeString()}</p>
+        <p style={{ fontSize: '0.8em', color: '#666' }}>最終更新: {timestamp}</p>
       </div>
     </div>
   );
