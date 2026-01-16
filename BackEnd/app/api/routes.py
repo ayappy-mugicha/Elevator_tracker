@@ -55,7 +55,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     }
 
                     # JSON形式でクライアントにデータをプッシュ
-                    await websocket.send_json(status_data.model_dump)
+                    await websocket.send_json(status_data)
                 
                 # 指定時間待機
                 
