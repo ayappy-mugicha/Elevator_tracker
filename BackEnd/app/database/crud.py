@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from . import models
 from typing import Dict, Any, List
@@ -14,7 +14,8 @@ async def create_elevator_status(db: AsyncSession, data: Dict[str, Any]) -> mode
 
     db_status = models.ElevatorStatus(
         # エレベータID
-        elevator_id = data.get("elevator_id","E1"),
+        # elevator_id = data.get("elevator_id","E1"),
+        elevator_id=data["elevator_id"],
         # 階層
         current_floor=data["current_floor"],
         # 人数
@@ -40,6 +41,30 @@ async def get_latest_elevator_status(db: AsyncSession) -> models.ElevatorStatus 
         select(models.ElevatorStatus).order_by(models.ElevatorStatus.timestamp.desc()) # タイムスタンプでソ降順ソート
     )
     return reslut.scalars().first()
+
+async def get_multi_elevator_statuses(db: AsyncSession) -> List[models.ElevatorStatus]:
+    """
+    各エレベーターIDごとに、最新のステータスを取得してリストで返す
+    """
+    # サブクエリ: IDごとの最新時刻を取得
+    subq = (
+        select(
+            models.ElevatorStatus.elevator_id,
+            func.max(models.ElevatorStatus.timestamp).label("max_ts")
+        )
+        .group_by(models.ElevatorStatus.elevator_id)
+        .subquery()
+    )
+
+    # メインクエリ: IDと時刻が一致する行を取得
+    stmt = (
+        select(models.ElevatorStatus)
+        .join(subq, (models.ElevatorStatus.elevator_id == subq.c.elevator_id) & (models.ElevatorStatus.timestamp == subq.c.max_ts))
+        .order_by(models.ElevatorStatus.elevator_id)
+    )
+    
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 def get_recent_status_list(db: AsyncSession, limit: int = 10) -> List[models.ElevatorStatus]:
     """
