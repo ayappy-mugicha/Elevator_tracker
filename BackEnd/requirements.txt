@@ -1,10 +1,10 @@
-fastapi
-uvicorn
-sqlalchemy
+fastapi # API設定
+uvicorn # web用非同期サーバー
+sqlalchemy # DBを使うためのモジュール
 pydantic
 pydantic-settings
-python-dotenv
+python-dotenv # envを読み込むためのモジュール
 aiomysql # Mysql接続用
 paho-mqtt # MQTTクライアント接続用
-cryptography
-websockets
+cryptography # 暗号化など
+websockets # 双方通信用モジュール
