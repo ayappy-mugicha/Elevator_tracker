@@ -42,20 +42,22 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             db = database.SessionLocal()
             try:
-                # 最新データをDBから取得 (CRUDのread)
-                latest_status = await crud.get_latest_elevator_status(db)
+                # 最新データをDBから取得 (全台分)
+                latest_statuses = await crud.get_multi_elevator_statuses(db)
 
-                if latest_status:
-                    # Pydantic スキーマに変換
-                    status_data = {
-                        "current_floor": latest_status.current_floor,
-                        "occupancy": latest_status.occupancy,
-                        "direction": latest_status.direction,
-                        "timestamp": str(latest_status.timestamp),
-                    }
+                if latest_statuses:
+                    response_data = []
+                    for status in latest_statuses:
+                        response_data.append({
+                            "elevator_id": status.elevator_id,
+                            "current_floor": status.current_floor,
+                            "occupancy": status.occupancy,
+                            "direction": status.direction,
+                            "timestamp": str(status.timestamp),
+                        })
 
-                    # JSON形式でクライアントにデータをプッシュ
-                    await websocket.send_json(status_data)
+                    # JSON形式でクライアントにデータをプッシュ (リスト形式)
+                    await websocket.send_json(response_data)
                 
                 # 指定時間待機
                 
