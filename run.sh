@@ -14,6 +14,7 @@ mkdir -p "$LOG_DIR" # ログディレクトリを作成
 
 # 実行中のプロセスを追跡するためのPIDファイルを各のするディレクトリ
 PID_MQTT="$PID_DIR/mqtt_worker.pid"
+PID_MQTTPUB="$PID_DIR/testsendmqtt.pid"
 PID_FASTAPI="$PID_DIR/fastapi_server.pid"
 PID_REACT="$PID_DIR/react_dev.pid"
 # スクリプト終了時にすべてのバックグラウンドプロセスを終了させる関数
@@ -24,11 +25,12 @@ cleanup(){
 
     # PIDファイルを使ってプロセスグループごと終了
     [ -f "$PID_MQTT" ] && kill -TERM -- -$(cat "$PID_MQTT") 2>/dev/null || true
+    [ -f "$PID_MQTTPUB" ] && kill -TERM -- -$(cat "$PID_MQTTPUB") 2>/dev/null || true
     [ -f "$PID_FASTAPI" ] && kill -TERM -- -$(cat "$PID_FASTAPI") 2>/dev/null || true
     [ -f "$PID_REACT" ] && kill -TERM -- -$(cat "$PID_REACT") 2>/dev/null || true
 
     # PIDファイルを削除
-    rm -f "$PID_MQTT" "$PID_FASTAPI" "$PID_REACT"
+    rm -f "$PID_MQTT" "$PID_MQTTPUB" "$PID_FASTAPI" "$PID_REACT"
     kill 0 2>/dev/null
     echo "すべてのプロセスが停止しました"
     exit 0
@@ -43,10 +45,11 @@ echo "---バックエンドを起動---"
 if [ -f "$ACTIVATE_VENV" ]; then
     echo "仮想環境を有効化完了"
     . $ACTIVATE_VENV
-
-else
+else # 仮想環境が存在しない場合
     echo "仮想環境が見つかりません: $ACTIVATE_VENV"
     read -p "仮想環境を構築しますか [y/n]: " answer
+    echo ""
+
     if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
         echo "仮想環境を構築します"
         python3 -m venv "$VENV_NAME"
@@ -61,8 +64,8 @@ else
         echo "了解です。終了します"
         exit 1
     fi
-
 fi
+echo ""
 
 # MQTTワーカーを起動
 echo "--MQTTワーカーをバックグラウンドで起動中--"
@@ -75,6 +78,15 @@ echo "--MQTTワーカーをバックグラウンドで起動中--"
 echo ""
 echo "--MQTTワーカー起動完了--"
 sleep 2 # MQTTワーカーの初期化を待機
+
+echo "--テスト用MQTTパブリッシャー起動完了--"
+(
+    cd "$PROJECT_ROOT/BackEnd"
+    setsid python -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
+    echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
+)
+echo ""
+sleep 2 # MQTTパブリッシャーの初期化を待機
 
 # FastAPIの起動
 echo "--Fastapi サーバーをバックグラウンドで起動中--"
@@ -95,6 +107,7 @@ echo "npm確認中"
 
 if [ ! -d "$FRONTEND_DATA" ] ; then
     read -p "$FRONTEND_DATAが見つかりませんでした。npm installを実行しますか[y/n]: " answer
+    echo ""
     if [ "$answer" = "y" ] || [ "$answer" = "Y" ];then
         echo "npm install を実行中"
         (cd "$PROJECT_ROOT/frontend" && npm install)
@@ -106,6 +119,7 @@ if [ ! -d "$FRONTEND_DATA" ] ; then
 else
     echo "npm確認完了確認できました"
 fi
+echo ""
 
 echo "--react開発サーバーをバックグラウンドで起動中--"
 (
@@ -113,10 +127,17 @@ echo "--react開発サーバーをバックグラウンドで起動中--"
     setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
     echo $! > "$PID_REACT" # pidをファイルに保存
 )
+echo ""
+
+sleep 3 # React開発サーバーの初期化を待機
+head -n 10 "$LOG_DIR/react.log" || true # URLを表示
 
 echo "起動完了"
 echo "システムが稼働中です。ctrl+Cですべてを停止します"
 echo ""
 
 # コンソール表示用
-#tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log"
+# tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log" -f "$LOG_DIR/testsendmqtt.log"
+
+# 無限ループでスクリプトを実行し続ける
+while true ; do sleep 1; done
