@@ -2,6 +2,9 @@
 
 ## 使い方
 *run.shを実行してください。そうすれば動くはず
+```bash
+    bash run.sh
+```
 
 ## 開発者が学んだこと
 これでpythonの一つ前のディレクトリのファイルを参照できる
@@ -14,13 +17,18 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 # 3. Pythonの「探し物リスト」に親フォルダを追加！
 sys.path.append(parent_dir)
+
 ```
+
 * bashファイルで以下のことをすると解放しやすいらしい。
+
 ```bash
     # setsid を使うと新しいプロセスセッションを開始でき、グループ kill が確実になります
     setsid python app/workers/mqtt_worker.py > /dev/null 2>&1 &
 ```
+
 ## 導入したい技術スタック
+
 <ul>
     <li><b>SORACOM (SORACOM Beam/Canal)</b>：
 日本のIoTで超定番！SIMカードと一緒に使うと、セキュリティ設定を肩代わりしてくれるから、デバイス側の負担が減ってすごく楽ちんだよ。
