@@ -11,12 +11,8 @@ parent_dir = os.path.dirname(current_dir)
 # 3. Pythonの「探し物リスト」に親フォルダを追加！
 sys.path.append(parent_dir)
 from core import config
-# あとでここ修正しておいて
+# あとでここ修正しておいて 直したよ
 
-# MQTTブローカーの設定
-# BROKER_HOST = "broker.hivemq.com"  # あなたのMQTTブローカーのホスト名またはIPアドレス
-# BROKER_PORT = 1883                 # MQTTブローカーのポート
-# TOPIC = "elevator/status"          # メッセージを送信するトピック
 
 # 接続時のコールバック関数
 def on_connect(client, userdata, flags, rc, properties=None):
@@ -67,7 +63,10 @@ if __name__ == "__main__":
             time.sleep(2) # 2秒待機
 
             publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, "E002")
-            time.sleep(3) # 3秒待機
+            time.sleep(2) # 2秒待機
+
+            publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, "E003")
+            time.sleep(2) # 2秒待機
 
     except KeyboardInterrupt:
         print("発行を停止します。")
