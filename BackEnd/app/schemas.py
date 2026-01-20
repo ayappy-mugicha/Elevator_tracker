@@ -3,7 +3,7 @@ from datetime import datetime
 
 class ElevatorStatusSchema(BaseModel):
     """ フロントエンドへ返すエレベーターの状態スキーマ """
-
+    elevator_id: str
     current_floor: int
     occupancy: int
     direction: str # "UP" "DOWN" "IDLE"
