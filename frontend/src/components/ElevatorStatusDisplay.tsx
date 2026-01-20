@@ -15,6 +15,72 @@ const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
   }
 };
 
+// 個別のエレベーターカードコンポーネント
+const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
+  const elevatorid = data.elevator_id ?? '不明';
+  const currentFloor = data.current_floor ?? '-';
+  const occupancy = data.occupancy ?? '-';
+  const direction = data.direction ?? 'STOP';
+  const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '--:--:--';
+
+  return (
+    <div style={{ 
+      display: 'flex',
+      textAlign: 'center',
+       
+      fontFamily: 'Arial, sans-serif', 
+      padding: '20px', 
+      backgroundColor: '#fff',
+      borderRadius: '8px',
+      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+      minWidth: '250px',
+      flex: '1 1 300px', // レスポンシブ対応
+      maxWidth: '400px'
+    }}>
+      // エレベーターID
+      <h2 style={
+        {color: '#333',
+         borderBottom: '2px solid #eee', 
+         paddingBottom: '10px',
+         textAlign: 'center',
+         }}>
+        ID: {elevatorid}
+      </h2>
+      // 進行方向アイコン
+      <div style={{
+         margin: '20px 0',
+         textAlign: 'center'         
+         }}>
+        <DirectionIcon direction={direction} />
+      </div>
+      
+      // 現在の階数表示
+      <div style={{ 
+        fontSize: '2em', 
+        fontWeight: 'normal', 
+        color: '#007bff', 
+        border: '3px solid #007bff', 
+        padding: '10px', 
+        display: 'inline-block', 
+        borderRadius: '8px',
+        minWidth: '50px',
+        backgroundColor: '#f9f9f9'
+      }}>
+        {currentFloor} F
+      </div>
+      
+      <div style={{ marginTop: '20px' }}> // 搭乗人数と更新時間
+        <p style={{ fontSize: '1.2em', color: 'black' }}>
+        搭乗人数: <strong style={{ color: '#333' }}>
+        {occupancy} 人</strong></p>
+
+        <p style={{ fontSize: '0.8em', color: '#888' }}>更新: {timestamp}</p>
+
+      </div>
+    </div>
+  );
+};
+
 const ElevatorStatusDisplay: React.FC = () => {
   const { status, isConnected, error } = useElevatorWebSocket();
   const [showError, setShowError] = useState(false);
@@ -25,11 +91,8 @@ const ElevatorStatusDisplay: React.FC = () => {
     }
   }, [error]);
 
-  const elevator_id = status?.elevator_id ?? '?';
-  const currentFloor = status?.current_floor ?? '-';
-  const occupancy = status?.occupancy ?? '-';
-  const direction = status?.direction ?? 'STOP';
-  const timestamp = status?.timestamp ? new Date(status.timestamp).toLocaleTimeString() : '--:--:--';
+  // statusが配列であることを期待。単一オブジェクトの場合は配列に変換、nullなら空配列
+  const elevators = Array.isArray(status) ? status : (status ? [status] : []);
 
   return (
     <div style={{ 
@@ -38,8 +101,8 @@ const ElevatorStatusDisplay: React.FC = () => {
       padding: '20px', 
       backgroundColor: '#f4f4f4',
       borderRadius: '8px',
-      position: 'relative',
-      minWidth: '300px'
+      position: 'relative', 
+      minHeight: '80vh'
     }}>
       {showError && (
         <div style={{
@@ -74,42 +137,26 @@ const ElevatorStatusDisplay: React.FC = () => {
         </div>
       )}
 
-      <h1 style={{color: 'black'}}>エレベーター監視システム ({elevator_id})</h1>
+      <h1 style={{color: 'black', marginBottom: '30px'}}>エレベーター監視システム</h1>
       
       <div style={{ 
-        fontSize: '0.8em', 
+        fontSize: '1em', 
         color: isConnected ? 'green' : 'orange',
-        marginBottom: '10px',
-        height: '1.2em'
+        marginBottom: '20px',
+        fontWeight: 'bold'
       }}>
         {isConnected ? '● 接続済み' : '○ 接続中...'}
       </div>
 
-      <hr />
-      
-      <div style={{ margin: '30px 0' }}>
-        <p style={{ fontSize: '2em', margin: '5px 0' ,color: 'black'}}>現在の状況:</p>
-        <DirectionIcon direction={direction} />
-      </div>
-
-      <div style={{ 
-        fontSize: '4em', 
-        fontWeight: 'bold', 
-        color: '#007bff', 
-        border: '3px solid #007bff', 
-        padding: '20px', 
-        display: 'inline-block', 
-        borderRadius: '10px',
-        minWidth: '100px'
-      }}>
-        {currentFloor} F
-      </div>
-      
-      <div style={{ marginTop: '20px' }}>
-        <p style={{ fontSize: '1.5em', color: 'black' }}>搭乗人数: 
-          <strong style={{ color: '#333' }}> {occupancy} 人</strong>
-        </p>
-        <p style={{ fontSize: '0.8em', color: '#666' }}>最終更新: {timestamp}</p>
+      {/* エレベーターカードのリスト表示エリア */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
+        {elevators.length > 0 ? (
+          elevators.map((elevator: any) => (
+            <ElevatorCard key={elevator.elevator_id} data={elevator} />
+          ))
+        ) : (
+          <p style={{color: '#666'}}>データ待機中...</p>
+        )}
       </div>
     </div>
   );
