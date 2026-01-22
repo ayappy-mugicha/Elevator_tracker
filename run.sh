@@ -79,14 +79,14 @@ echo ""
 echo "--MQTTワーカー起動完了--"
 sleep 2 # MQTTワーカーの初期化を待機
 
-echo "--テスト用MQTTパブリッシャー起動完了--"
-(
-    cd "$PROJECT_ROOT/BackEnd"
-    setsid python -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
-    echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
-)
-echo ""
-sleep 2 # MQTTパブリッシャーの初期化を待機
+# echo "--テスト用MQTTパブリッシャー起動完了--"
+# (
+#     cd "$PROJECT_ROOT/BackEnd"
+#     setsid python -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
+#     echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
+# )
+# echo ""
+# sleep 2 # MQTTパブリッシャーの初期化を待機
 
 # FastAPIの起動
 echo "--Fastapi サーバーをバックグラウンドで起動中--"

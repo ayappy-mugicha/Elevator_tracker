@@ -1,0 +1,1 @@
+SELECT * FROM elevator_status
