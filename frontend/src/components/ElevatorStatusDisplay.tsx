@@ -4,13 +4,13 @@ import { useElevatorWebSocket } from '../hooks/useElevatorWebSocket';
 const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
   const style = {
     fontSize: '2em',
-    color: direction === 'UP' ? 'green' : direction === 'DOWN' ? 'red' : 'gray',
+    color: direction === 'up' ? 'green' : direction === 'down' ? 'red' : 'gray',
     marginRight: '10px'
   };
   
   switch (direction) {
-    case 'UP': return <span style={style}>⬆️ 上昇中</span>;
-    case 'DOWN': return <span style={style}>⬇️ 降下中</span>;
+    case 'up': return <span style={style}>⬆️ 上昇中</span>;
+    case 'down': return <span style={style}>⬇️ 降下中</span>;
     default: return <span style={style}>➖ 停止中</span>;
   }
 };
@@ -18,7 +18,7 @@ const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
 // 個別のエレベーターカードコンポーネント
 const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
   const elevatorid = data.elevator_id ?? '不明';
-  const currentFloor = data.current_floor ?? '-';
+  const currentFloor = data.current_floor || '-';
   const occupancy = data.occupancy ?? '-';
   const direction = data.direction ?? 'STOP';
   const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '--:--:--';
@@ -26,6 +26,7 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
   return (
     <div style={{ 
       display: 'flex',
+      flexDirection: 'column',
       textAlign: 'center',
        
       fontFamily: 'Arial, sans-serif', 
@@ -34,10 +35,9 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
       borderRadius: '8px',
       boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
       minWidth: '250px',
-      flex: '1 1 300px', // レスポンシブ対応
       maxWidth: '400px'
     }}>
-      // エレベーターID
+      {/* エレベーターID */}
       <h2 style={
         {color: '#333',
          borderBottom: '2px solid #eee', 
@@ -46,7 +46,7 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
          }}>
         ID: {elevatorid}
       </h2>
-      // 進行方向アイコン
+      {/* 進行方向アイコン */}
       <div style={{
          margin: '20px 0',
          textAlign: 'center'         
@@ -54,7 +54,7 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
         <DirectionIcon direction={direction} />
       </div>
       
-      // 現在の階数表示
+      {/* 現在の階数表示 */}
       <div style={{ 
         fontSize: '2em', 
         fontWeight: 'normal', 
@@ -69,7 +69,7 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
         {currentFloor} F
       </div>
       
-      <div style={{ marginTop: '20px' }}> // 搭乗人数と更新時間
+      <div style={{ marginTop: '20px' }}> {/* 搭乗人数と更新時間 */}
         <p style={{ fontSize: '1.2em', color: 'black' }}>
         搭乗人数: <strong style={{ color: '#333' }}>
         {occupancy} 人</strong></p>
@@ -86,13 +86,12 @@ const ElevatorStatusDisplay: React.FC = () => {
   const [showError, setShowError] = useState(false);
 
   useEffect(() => {
-    if (error) {
-      setShowError(true);
-    }
+    if (error) setShowError(true);
   }, [error]);
 
   // statusが配列であることを期待。単一オブジェクトの場合は配列に変換、nullなら空配列
   const elevators = Array.isArray(status) ? status : (status ? [status] : []);
+  const targetIds = ['E001', 'E002', 'E003'];
 
   return (
     <div style={{ 
@@ -104,6 +103,7 @@ const ElevatorStatusDisplay: React.FC = () => {
       position: 'relative', 
       minHeight: '80vh'
     }}>
+    
       {showError && (
         <div style={{
           position: 'fixed',
@@ -148,16 +148,13 @@ const ElevatorStatusDisplay: React.FC = () => {
         {isConnected ? '● 接続済み' : '○ 接続中...'}
       </div>
 
-      {/* エレベーターカードのリスト表示エリア */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', justifyContent: 'center' }}>
-        {elevators.length > 0 ? (
-          elevators.map((elevator: any) => (
-            <ElevatorCard key={elevator.elevator_id} data={elevator} />
-          ))
-        ) : (
-          <p style={{color: '#666'}}>データ待機中...</p>
-        )}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+        {targetIds.map(id => {
+          const elevatorData = elevators.find((e: any) => String(e.elevator_id) === id) || { elevator_id: id };
+          return <ElevatorCard key={id} data={elevatorData} />;
+        })}
       </div>
+
     </div>
   );
 };
