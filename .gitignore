@@ -2,4 +2,4 @@ Elevetor
 .venv
 run
 logs
-BackEnd/app/database/export_data
+export_data

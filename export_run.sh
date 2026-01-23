@@ -1,8 +1,9 @@
+set -e
 PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 TODAY=$(date +"%Y%m%d")
-ENV_PATH="./../../.env"
+ENV_PATH="$PROJECT_ROOT/BackEnd/.env"
 OUTPUT_PATH="$PROJECT_ROOT/export_data/elevator_data_export_$TODAY.csv"
-SQL_FILE="./export.sql"
+SQL_FILE="$PROJECT_ROOT/BackEnd/app/database/export.sql"
 
 # 環境変数の読み込み
 if [ -f "$ENV_PATH" ]; then
@@ -10,6 +11,9 @@ if [ -f "$ENV_PATH" ]; then
 else
     echo ".envファイルが見つかりませんでした"
     exit 1
+fi
+if [ ! -d "$PROJECT_ROOT/export_data" ]; then
+    mkdir -p "$PROJECT_ROOT/export_data"
 fi
 
 echo "ファイルをエクスポート中"
