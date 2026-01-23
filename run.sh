@@ -12,6 +12,9 @@ PID_DIR="$PROJECT_ROOT/run"
 mkdir -p "$PID_DIR"
 mkdir -p "$LOG_DIR" # ログディレクトリを作成
 
+# 環境変数ファイルのパス
+ENV_PATH="$PROJECT_ROOT/BackEnd/.env"
+
 # 実行中のプロセスを追跡するためのPIDファイルを各のするディレクトリ
 PID_MQTT="$PID_DIR/mqtt_worker.pid"
 PID_MQTTPUB="$PID_DIR/testsendmqtt.pid"
@@ -64,6 +67,29 @@ else # 仮想環境が存在しない場合
         echo "了解です。終了します"
         exit 1
     fi
+fi
+echo ""
+echo "データベースを確認中"
+# データベースの接続確認
+if [ -f "$ENV_PATH" ]; then
+    export $(grep -v '^#' $ENV_PATH | xargs)
+    if mysql -u "$DB_USER" -p"$DB_PASSWORD" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
+        echo "データベース '$DB_NAME' を確認できました。"
+    else
+        echo "エラー: データベース '$DB_NAME' を確認できません。"
+        read -p "データベースを作成しますか?[y/n]: " answer
+        echo ""
+        if ["$answer" = "y" ] || [ "$answer" = "Y" ]; then
+            echo "データベースを作成中"
+            python "$PROJECT_ROOT/BackEnd/app/database/create_tables.py"
+            echo "データベースを作成しました"
+        else
+            echo "了解です。終了します"
+            exit 1
+        fi
+    fi
+else
+    echo "警告: .envファイルが見つからないため、データベース接続確認をスキップします: $ENV_PATH"
 fi
 echo ""
 
