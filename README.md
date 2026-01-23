@@ -6,6 +6,26 @@
     bash run.sh
 ```
 
+* export_run.shを実行するとexport_dataというフォルダー内にCSVファイルでDBのデータが保存されます。
+```bash
+    bash export_run.sh
+```
+## 技術スタック
+* react
+* python
+* sql
+* bash
+* fastapi # API設定
+* uvicorn # web用非同期サーバー
+* sqlalchemy # DBを使うためのモジュール
+* pydantic
+* pydantic-settings
+* python-dotenv # envを読み込むためのモジュール
+* aiomysql # Mysql接続用
+* paho-mqtt # MQTTクライアント接続用
+* cryptography # 暗号化など
+* websockets # 双方通信用モジュール
+
 ## 開発者が学んだこと
 これでpythonの一つ前のディレクトリのファイルを参照できる
 ``` python
