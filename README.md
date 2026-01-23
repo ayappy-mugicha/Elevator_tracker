@@ -1,7 +1,7 @@
 # Elevetor_tracker_website
 
 ## 使い方
-*run.shを実行してください。そうすれば動くはず
+* run.shを実行してください。そうすれば動くはず
 ```bash
     bash run.sh
 ```
