@@ -9,8 +9,8 @@ const DirectionIcon: React.FC<{ direction: string }> = ({ direction }) => {
   };
   
   switch (direction) {
-    case 'up': return <span style={style}>⬆️ 上昇中</span>;
-    case 'down': return <span style={style}>⬇️ 降下中</span>;
+    case 'UP': return <span style={style}>⬆️ 上昇中</span>;
+    case 'DOWN': return <span style={style}>⬇️ 降下中</span>;
     default: return <span style={style}>➖ 停止中</span>;
   }
 };
