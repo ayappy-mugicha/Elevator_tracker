@@ -1,4 +1,5 @@
 import paho.mqtt.client as mqtt
+import struct
 import json
 import time
 import random
@@ -33,18 +34,31 @@ def connect_mqtt_publisher():
 def publish_elevator_status(client, topic, elevator_id):
     current_floor = random.randint(1, 10) # 1階から10階までのランダムな階
     occupancy = random.randint(0, 5)     # 0人から5人までのランダムな人数
-    direction = random.choice(["UP", "DOWN", "STOP"]) # ランダムな方向
+    # direction = random.choice(["UP", "DOWN", "STOP"]) # ランダムな方向
+    direction = random.randint(0,2)
 
     # 送信するデータをJSON形式で作成
-    payload = {
-        "elevator_id": elevator_id,
-        "current_floor": current_floor,
-        "occupancy": occupancy,
-        "direction": direction,
-        "timestamp": time.time()
-    }
-    json_payload = json.dumps(payload)
-
+    # payload = {
+    #     "elevator_id": elevator_id,
+    #     "current_floor": current_floor,
+    #     "occupancy": occupancy,
+    #     "direction": direction,
+    #     "timestamp": time.time()
+    # }
+    # json_payload = struct.pack(json.dumps(payload))
+    payload = struct.pack(
+        config.settings.FORMAT_STR,
+        elevator_id,
+        current_floor,
+        occupancy,
+        direction
+        # int(time.time())
+        )
+    json_payload = payload
+    # print(json_payload.hex())
+    # print(type(json_payload))
+    # print(len(json_payload))
+    print(struct.unpack(config.settings.FORMAT_STR,json_payload))
     # メッセージを公開
     result = client.publish(topic, json_payload, qos=1) # qos=1: 少なくとも1回は届ける
     status = result[0]
@@ -59,14 +73,14 @@ if __name__ == "__main__":
     try:
         while True:
             # 複数の昇降機IDでデータを送信する例
-            publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, "E001")
+            publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, 1)
             time.sleep(2) # 2秒待機
 
-            publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, "E002")
-            time.sleep(2) # 2秒待機
+            # publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, 2)
+            # time.sleep(2) # 2秒待機
 
-            publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, "E003")
-            time.sleep(2) # 2秒待機
+            # publish_elevator_status(publisher_client, config.settings.MQTT_TOPIC, 3)
+            # time.sleep(2) # 2秒待機
 
     except KeyboardInterrupt:
         print("発行を停止します。")

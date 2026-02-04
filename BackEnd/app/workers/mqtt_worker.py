@@ -13,6 +13,7 @@ from database import crud , database
 from core import config
 import json
 import time
+import struct
 
 
 # グローバルなイベントループ
@@ -24,6 +25,32 @@ async def save_data_async(data):
         await crud.create_elevator_status(db, data)
         await db.commit()
 
+def mqtt_decode(format_str, payload):
+    unpacked_payload = struct.unpack(format_str, payload)
+    if unpacked_payload[0] == 1:
+        elevator_id = "E001"
+    elif unpacked_payload[0] == 2:
+        elevator_id = "E002"
+    elif unpacked_payload[0] == 3:
+        elevator_id = "E003"
+    
+    if unpacked_payload[3] == 0:
+        direction = "STOP"
+    elif unpacked_payload[3] == 1:
+        direction = "UP"
+    elif unpacked_payload[3] == 2:
+        direction = "DOWN"
+        
+    json_payload = {
+        "elevator_id": elevator_id,
+        "current_floor": unpacked_payload[1],
+        "occupancy": unpacked_payload[2],
+        "direction": direction,  
+        "timestamp": time.time() 
+    }
+    return json_payload
+    
+    
 # コールバック関数の定義
 
 def on_connect(client,userdata, flags, rc, properties=None): 
@@ -36,7 +63,7 @@ def on_connect(client,userdata, flags, rc, properties=None):
         
 def on_message(client, userdata, msg, properties=None):
     try:
-        data = json.loads(msg.payload.decode()) # jsonでMQTTのデータを読み取る
+        data = mqtt_decode(config.settings.FORMAT_STR,msg.payload) # jsonでMQTTのデータを読み取る
         if worker_loop:
             future = asyncio.run_coroutine_threadsafe(save_data_async(data), worker_loop)
             future.result()
