@@ -1,10 +1,30 @@
 # Elevetor_tracker_website
 
 ## 使い方
-*run.shを実行してください。そうすれば動くはず
+* run.shを実行してください。そうすれば動くはず
 ```bash
     bash run.sh
 ```
+
+* export_run.shを実行するとexport_dataというフォルダー内にCSVファイルでDBのデータが保存されます。
+```bash
+    bash export_run.sh
+```
+## 技術スタック
+* react
+* python
+* sql
+* bash
+* fastapi # API設定
+* uvicorn # web用非同期サーバー
+* sqlalchemy # DBを使うためのモジュール
+* pydantic
+* pydantic-settings
+* python-dotenv # envを読み込むためのモジュール
+* aiomysql # Mysql接続用
+* paho-mqtt # MQTTクライアント接続用
+* cryptography # 暗号化など
+* websockets # 双方通信用モジュール
 
 ## 開発者が学んだこと
 これでpythonの一つ前のディレクトリのファイルを参照できる
@@ -32,6 +52,8 @@ pythonでtableを作るシステムをつくったのは、馬鹿だった。
 普通にsqlファイルで作成しても良かったと思った。けどsqlファイルは、.envファイルを参照できないみたいだから、環境設定をあらかじめつくっておくシステムを作るには不向きかもしれん。結局sqlファイルはどのタイミングで使用するのがいいのかがまだわかってないね。正直ファイル出力をするならbashファイルでいい。
 つかbashファイルが便利すぎる。けど辛いことにbashはlinuxでしか使うことができないのが辛いよね。javaでbashファイルみたいに、環境構築だったりとか作ることってできるのかな。
 
+### つぶやき
+ほぼ、バイブコーディングで、イメージはできるけど、これをすべて自分がまた書ける自信はないよね。DBを初めてつくったけど、なかなか難しいぞどこまでを、入れるのかがね。
 ## 導入したい技術スタック
 
 <ul>
