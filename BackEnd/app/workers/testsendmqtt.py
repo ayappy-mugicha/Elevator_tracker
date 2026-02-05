@@ -21,6 +21,7 @@ def on_connect(client, userdata, flags, rc, properties=None):
         print(f"MQTTブローカーに接続成功: {config.settings.MQTT_HOST}:{config.settings.MQTT_PORT}")
     else:
         print(f"MQTTブローカーに接続失敗、エラーコード: {rc}")
+    print()
 
 # メッセージ送信用のクライアントを初期化
 def connect_mqtt_publisher():
@@ -46,24 +47,18 @@ def publish_elevator_status(client, topic, elevator_id):
     #     "timestamp": time.time()
     # }
     # json_payload = struct.pack(json.dumps(payload))
-    payload = struct.pack(
+    json_payload = struct.pack(
         config.settings.FORMAT_STR,
         elevator_id,
         current_floor,
         occupancy,
         direction
-        # int(time.time())
-        )
-    json_payload = payload
-    # print(json_payload.hex())
-    # print(type(json_payload))
-    # print(len(json_payload))
-    print(struct.unpack(config.settings.FORMAT_STR,json_payload))
+    )
     # メッセージを公開
     result = client.publish(topic, json_payload, qos=1) # qos=1: 少なくとも1回は届ける
     status = result[0]
     if status == 0:
-        print(f"トピック '{topic}' にメッセージを送信成功: {json_payload}")
+        print(f"メッセージを送信成功\nトピック:'{topic}'\n送信媒体:{json_payload}\nバイト数:{len(json_payload)}bytes\n実態:{struct.unpack(config.settings.FORMAT_STR,json_payload)}\n")
     else:
         print(f"メッセージの送信に失敗、エラーコード: {status}")
 

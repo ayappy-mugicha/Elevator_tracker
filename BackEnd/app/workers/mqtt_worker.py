@@ -27,24 +27,25 @@ async def save_data_async(data):
 
 def mqtt_decode(format_str, payload):
     unpacked_payload = struct.unpack(format_str, payload)
-    if unpacked_payload[0] == 1:
+    elevator_id, current_floor, occupancy, direction = unpacked_payload
+    if elevator_id == 1:
         elevator_id = "E001"
-    elif unpacked_payload[0] == 2:
+    elif elevator_id == 2:
         elevator_id = "E002"
-    elif unpacked_payload[0] == 3:
+    elif elevator_id == 3:
         elevator_id = "E003"
     
-    if unpacked_payload[3] == 0:
+    if direction == 0:
         direction = "STOP"
-    elif unpacked_payload[3] == 1:
+    elif direction == 1:
         direction = "UP"
-    elif unpacked_payload[3] == 2:
+    elif direction == 2:
         direction = "DOWN"
         
     json_payload = {
         "elevator_id": elevator_id,
-        "current_floor": unpacked_payload[1],
-        "occupancy": unpacked_payload[2],
+        "current_floor": current_floor,
+        "occupancy": occupancy,
         "direction": direction,  
         "timestamp": time.time() 
     }
@@ -67,7 +68,7 @@ def on_message(client, userdata, msg, properties=None):
         if worker_loop:
             future = asyncio.run_coroutine_threadsafe(save_data_async(data), worker_loop)
             future.result()
-        print(f"DBにデータを保存: timestamp={data['timestamp']} EID={data['elevator_id']} 階={data['current_floor']} 人数={data['occupancy']} 方向={data['direction']}")
+        print(f"\nDBにデータを保存\nEID={data['elevator_id']}\n階={data['current_floor']}\n人数={data['occupancy']}\n方向={data['direction']}\ntimestamp={data['timestamp']}\n")
 
     except Exception as e:
         print(f"MQTT処理エラー:{e}")
