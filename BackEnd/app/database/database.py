@@ -26,6 +26,7 @@ SessionLocal = sessionmaker(
     class_ = AsyncSession,
     autocommit=False,
     autoflush=False, 
+    expire_on_commit=False,
 )
 
 # すべてのモデルが継承するベースクラス
