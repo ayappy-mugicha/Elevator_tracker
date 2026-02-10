@@ -1,20 +1,21 @@
 set -e
 
-PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 # 仮想環境設定
-VENV_NAME="Elevetor"
-REQUIREMENTS="$PROJECT_ROOT/BackEnd/requirements.txt"
-LOG_DIR="$PROJECT_ROOT/logs" # ログファイル用のディレクトリを定義
-FRONTEND_DATA="$PROJECT_ROOT/frontend/node_modules"
-ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
+PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
+BACKEND_DIR="$PROJECT_ROOT/BackEnd"
+FRONTEND_DIR="$PROJECT_ROOT/frontend"
+FRONTEND_DATA="$FRONTEND_DIR/node_modules"
+ENV_PATH="$BACKEND_DIR/.env"
 
-PID_DIR="$PROJECT_ROOT/run"
-mkdir -p "$PID_DIR"
+VENV_NAME="Elevetor"
+ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
+REQUIREMENTS="$BACKEND_DIR/requirements.txt"
+
+LOG_DIR="$PROJECT_ROOT/logs" # ログファイル用のディレクトリを定義
+PID_DIR="$PROJECT_ROOT/run" # PIDファイル用のディレクトリを定義
+mkdir -p "$PID_DIR" # PIDファイル用のディレクトリを作成
 mkdir -p "$LOG_DIR" # ログディレクトリを作成
 AUTO_YES=false
-
-# 環境変数ファイルのパス
-ENV_PATH="$PROJECT_ROOT/BackEnd/.env"
 
 # 実行中のプロセスを追跡するためのPIDファイルを各のするディレクトリ
 PID_MQTT="$PID_DIR/mqtt_worker.pid"
@@ -35,26 +36,20 @@ log() {
 cleanup(){
     log "システムをシャットダウン中"
     set +e
+    PIDS=("$PID_MQTT" "$PID_MQTTPUB" "$PID_FASTAPI" "$PID_REACT")
     # 安全な終了処理の関数
-    safe_kill() {
-        local pid_file=$1
+    for pid_file in "${PIDS[@]}"; do
         if [ -f "$pid_file" ]; then
-            local pid=$(cat "$pid_file")
+            pid=$(cat "$pid_file")
             if [ -n "$pid" ]; then
                 # プロセスグループが存在するか確認してからkillを送るわ
                 kill -TERM -- -"$pid" 2>/dev/null || true
             fi
+            
+            # PIDファイルを削除
+            rm -f "$pid_file"
         fi
-    }
-    # PIDファイルを使ってプロセスグループごと終了
-    safe_kill "$PID_MQTT"
-    safe_kill "$PID_MQTTPUB"
-    safe_kill "$PID_FASTAPI"
-    safe_kill "$PID_REACT"
-
-    # PIDファイルを削除
-    rm -f "$PID_MQTT" "$PID_MQTTPUB" "$PID_FASTAPI" "$PID_REACT"
-    # kill -0 0 2>/dev/null
+    done
     log "すべてのプロセスが停止しました"
 }
 
@@ -100,7 +95,7 @@ check_environment(){
             if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
 
                 log "データベースを作成中"
-                python "$PROJECT_ROOT/BackEnd/app/database/create_tables.py"
+                python "$BACKEND_DIR/app/database/create_tables.py"
                 log "データベースを作成しました"
             else
                 log "了解です。終了します"
@@ -121,7 +116,7 @@ check_environment(){
         echo ""
         if [[ "$answer" == "y" || "$answer" == "Y" ]];then
             log "npm install を実行中"
-            (cd "$PROJECT_ROOT/frontend" && npm install)
+            (cd "$FRONTEND_DIR" && npm install)
             log "npmは正常に実行されました"
         else
             log "実行をキャンセルします"
@@ -132,11 +127,42 @@ check_environment(){
     fi
     echo ""
 }
+# 依存関係をインストールする関数
 install_dependenceis() {
+    # OSの種類を判別して依存関係をインストールする関数
+
+    declare -A OS_COMMANDS
+    OS_COMMANDS=(
+        [debian]="apt"
+        [ubuntu]="apt"
+        [fedora]="dnf"
+        [arch]="pacman"
+        [opensuse]="zypper"
+        [centos]="dnf"
+        [rhel]="dnf"
+    )
+
+    local REQUIRED_CMDS=("python3" "npm" "mysql")
+    log "依存関係の確認中"
+    OS_NAME=""
     PYTHON_EXE=true
     NPM_EXE=true
     MYSQL_EXE=true
+    
+    # OS情報を取得
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS_NAME=$ID
+    fi
+    
+    # OSの種類に応じてコマンドを選択
+    INSTALL_CMD=${OS_COMMANDS[$OS_NAME]}
+    if [ -z "$INSTALL_CMD" ]; then
+        log "対応していないOSです: $OS_NAME"
+        exit 1
+    fi
 
+    # コマンドの存在を確認
     if ! command -v python3 &> /dev/null; then
         PYTHON_EXE=false
     fi
@@ -147,22 +173,76 @@ install_dependenceis() {
         MYSQL_EXE=false
     fi
     
+    
     if [ "$PYTHON_EXE" = true ] && [ "$NPM_EXE" = true ] && [ "$MYSQL_EXE" = true ]; then
         log "すべての依存関係がインストールされています。"
         return
     fi
 
     log "依存関係が不足しています。インストールを開始します。"
-    sudo apt update
-    if [ "$PYTHON_EXE" = false ]; then
-        sudo apt install python3 -yl
+    sudo $CMD update
+
+    for tool in "$REQUIRED_CMDS[@]"; do
+        if ! command -v "$tool" &> /dev/null; then
+            log "依存関係 '$tool' が見つかりません。インストールします。"
+            sudo $CMD install -y "$tool"
+            log "依存関係 '$tool' のインストールが完了しました。"
+        else
+            log "依存関係 '$tool' はすでにインストールされています。"
+        fi
+    done
+    log "環境確認完了"
+}
+backend() {
+    log "バックエンドを起動"
+    #仮想環境を有効化
+    . $ACTIVATE_VENV
+    log "仮想環境を有効化完了"
+    # MQTTワーカーを起動
+    log "MQTTワーカーをバックグラウンドで起動中"
+    (
+        cd "$BACKEND_DIR"
+        # setsid を使うと新しいプロセスセッションを開始でき、グループ kill が確実になります
+        setsid python -m app.workers.mqtt_worker > "$LOG_DIR/mqtt_worker.log" 2>&1 &
+        echo $! > "$PID_MQTT" #PIDをファイルに保存
+    )
+    log "MQTTワーカー起動完了"
+
+    # testsendを有効化
+    if [ "$AUTO_YES" = true ]; then
+        log "テスト用MQTTパブリッシャー起動完了"
+        (
+            cd "$BACKEND_DIR"
+            setsid python -u -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
+            echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
+        )
     fi
-    if [ "$NPM_EXE" = false ]; then
-        sudo apt install npm -yl
-    fi
-    if [ "$MYSQL_EXE" = false ]; then
-        sudo apt install mysql-client -yl
-    fi
+
+    # FastAPIの起動
+    log "Fastapi サーバーをバックグラウンドで起動中"
+    (
+        cd "$BACKEND_DIR"
+        setsid uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/fastapi.log" 2>&1 &
+        echo $! > "$PID_FASTAPI" # PID をファイルに保存
+    )
+    log "fastapiサーバー起動完了"
+
+}
+
+frontend() {
+    log "フロントエンドを起動"
+    log "react開発サーバーをバックグラウンドで起動中"
+    (
+        cd "$FRONTEND_DIR"
+        setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
+        echo $! > "$PID_REACT" # pidをファイルに保存
+    )
+    sleep 1 # React開発サーバーの初期化を待機
+    echo ""
+    awk 'FNR==2,NFR==10' "$LOG_DIR/react.log" || true # URLを表示
+    echo ""
+    log "起動完了"
+    log "システムが稼働中です。ctrl+Cですべてを停止します"
 }
 # -y オプションがあるとき
 while getopts "y" opt; do
@@ -175,65 +255,11 @@ trap cleanup EXIT
 
 # 環境を確認
 install_dependenceis
-log "環境確認完了"
 check_environment
-log "バックエンドを起動"
 
-#仮想環境を有効化
-. $ACTIVATE_VENV
-log "仮想環境を有効化完了"
-# echo ""
-
-# MQTTワーカーを起動
-log "MQTTワーカーをバックグラウンドで起動中"
-(
-    cd "$PROJECT_ROOT/BackEnd"
-    # setsid を使うと新しいプロセスセッションを開始でき、グループ kill が確実になります
-    setsid python -m app.workers.mqtt_worker > "$LOG_DIR/mqtt_worker.log" 2>&1 &
-    echo $! > "$PID_MQTT" #PIDをファイルに保存
-)
-log "MQTTワーカー起動完了"
-# sleep 2 # MQTTワーカーの初期化を待機
-
-# testsendを有効化
-if [ "$AUTO_YES" = true ]; then
-
-    log "テスト用MQTTパブリッシャー起動完了"
-    (
-        cd "$PROJECT_ROOT/BackEnd"
-        setsid python -u -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
-        echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
-    )
-    # sleep 2 # MQTTパブリッシャーの初期化を待機
-fi
-
-# FastAPIの起動
-log "Fastapi サーバーをバックグラウンドで起動中"
-(
-    cd "$PROJECT_ROOT/BackEnd/"
-    setsid uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/fastapi.log" 2>&1 &
-    echo $! > "$PID_FASTAPI" # PID をファイルに保存
-)
-log "fastapiサーバー起動完了"
-log "サーバーが起動するのを待機中"
-
-# sleep 2 # サーバー起動を待つために数秒待機
-
-# Frontエンドの起動
-echo ""
-log "フロントエンド起動"
-log "react開発サーバーをバックグラウンドで起動中"
-(
-    cd "$PROJECT_ROOT/frontend"
-    setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
-    echo $! > "$PID_REACT" # pidをファイルに保存
-)
-sleep 1 # React開発サーバーの初期化を待機
-echo ""
-awk 'FNR==2,NFR==10' "$LOG_DIR/react.log" || true # URLを表示
-echo ""
-log "起動完了"
-log "システムが稼働中です。ctrl+Cですべてを停止します"
+# バックエンドとフロントエンドを起動
+backend
+frontend
 
 # コンソール表示用
 # tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log" -f "$LOG_DIR/testsendmqtt.log"
