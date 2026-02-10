@@ -1,3 +1,4 @@
+import { StrictMode } from 'react'
 import './App.css'
 import ElevatorStatusDisplay from './components/ElevatorStatusDisplay'
 function App() {

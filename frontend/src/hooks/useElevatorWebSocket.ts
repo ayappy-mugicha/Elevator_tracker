@@ -19,8 +19,11 @@ export const useElevatorWebSocket = () => {
     const wsRef = useRef<WebSocket | null>(null);
 
     // 接続処理をusecallbackでラップ
-    const connect = useCallback(() =>{ // コールバックコネクト
+    const connect = useCallback(() => { // コールバックコネクト
+        console.log("WebSocket接続を試みています..."); // 接続試行のログ
         if (wsRef.current) {
+            // 既存の接続を閉じる前に、oncloseハンドラをクリアして再接続ループを防ぐ
+            wsRef.current.onclose = null;
             wsRef.current.close();
         }
         const ws = new WebSocket(WS_URL);

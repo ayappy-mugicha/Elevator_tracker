@@ -88,6 +88,8 @@ const ElevatorStatusDisplay: React.FC = () => {
   useEffect(() => {
     if (error) setShowError(true);
   }, [error]);
+  
+  console.log(status);
 
   // statusが配列であることを期待。単一オブジェクトの場合は配列に変換、nullなら空配列
   const elevators = Array.isArray(status) ? status : (status ? [status] : []);
@@ -136,7 +138,7 @@ const ElevatorStatusDisplay: React.FC = () => {
           </button>
         </div>
       )}
-
+      
       <h1 style={{color: 'black', marginBottom: '30px'}}>エレベーター監視システム</h1>
       
       <div style={{ 
