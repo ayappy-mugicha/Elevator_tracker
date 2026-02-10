@@ -132,7 +132,38 @@ check_environment(){
     fi
     echo ""
 }
+install_dependenceis() {
+    PYTHON_EXE=true
+    NPM_EXE=true
+    MYSQL_EXE=true
 
+    if ! command -v python3 &> /dev/null; then
+        PYTHON_EXE=false
+    fi
+    if ! command -v npm &> /dev/null; then
+        NPM_EXE=false
+    fi
+    if ! command -v mysql &> /dev/null; then
+        MYSQL_EXE=false
+    fi
+    
+    if [ "$PYTHON_EXE" = true ] && [ "$NPM_EXE" = true ] && [ "$MYSQL_EXE" = true ]; then
+        log "すべての依存関係がインストールされています。"
+        return
+    fi
+
+    log "依存関係が不足しています。インストールを開始します。"
+    sudo apt update
+    if [ "$PYTHON_EXE" = false ]; then
+        sudo apt install python3 -yl
+    fi
+    if [ "$NPM_EXE" = false ]; then
+        sudo apt install npm -yl
+    fi
+    if [ "$MYSQL_EXE" = false ]; then
+        sudo apt install mysql-client -yl
+    fi
+}
 # -y オプションがあるとき
 while getopts "y" opt; do
     case $opt in
@@ -143,6 +174,8 @@ done
 trap cleanup EXIT
 
 # 環境を確認
+install_dependenceis
+log "環境確認完了"
 check_environment
 log "バックエンドを起動"
 
