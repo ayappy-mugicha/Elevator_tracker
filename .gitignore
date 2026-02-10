@@ -16,11 +16,4 @@ __pycache__/
 .vscode/
 *.swp
 *.swo
-BackEnd/__pycache__/
-BackEnd/app/__pycache__/
-BackEnd/app/models/__pycache__/
-BackEnd/app/crud/__pycache__/
-BackEnd/app/core/__pycache__/
-BackEnd/app/api/__pycache__/
-BackEnd/app/database/__pycache__/
-BackEnd/app/workers/__pycache__/
+/node_modules
