@@ -33,11 +33,11 @@ async def websocket_endpoint(websocket: WebSocket):
     websocketクライアント接続を受け入れ、DBの最新データを定期的にプッシュする
     """
     await websocket.accept()
-    print("websocketクライアントが接続しました")
+    print("websocketクライアントが接続しました", flush=True)
 
     try:
         # DB への負担を考慮し、ボーリング間隔を0.5秒に設定
-        POLL_INTERBAL = 0.5
+        POLL_INTERVAL = 0.5
 
         while True:
             db = database.SessionLocal()
@@ -65,12 +65,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 await db.close() # DBクローズ
             
             # 指定時間待機
-            await asyncio.sleep(POLL_INTERBAL)
+            await asyncio.sleep(POLL_INTERVAL)
 
     except WebSocketDisconnect:
-        print("websocketクライアントが切断しました")
+        print("websocketクライアントが切断しました", flush=True)
     except Exception as e:
-        print(f"websocket処理中にエラーが発生: {e}")
+        print(f"websocket処理中にエラーが発生: {e}", flush=True)
         traceback.print_exc()
     finally:
         await websocket.close()
