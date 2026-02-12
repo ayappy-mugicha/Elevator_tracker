@@ -18,7 +18,7 @@ from core import config
 # 接続時のコールバック関数
 def on_connect(client, userdata, flags, rc, properties=None):
     if rc == 0:
-        print(f"MQTTブローカーに接続成功: {config.settings.MQTT_HOST}:{config.settings.MQTT_PORT}")
+        print(f"MQTTブローカーに接続成功: {config.settings.MQTT_HOST}:{config.settings.MQTT_PORT}\n{config.settings.MQTT_TOPIC}")
     else:
         print(f"MQTTブローカーに接続失敗、エラーコード: {rc}")
     print()

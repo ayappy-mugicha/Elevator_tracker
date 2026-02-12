@@ -22,6 +22,7 @@ def read_latest_status_http(db: Session = Depends(database.get_db)):
     """ DBから最新のステータスを1件取得し、HTTPで返す (主にデバッグ用 """
     latest_status = crud.get_latest_elevator_status(db)
     if not latest_status:
+        print("No elevator status found in the database.", flush=True)
         raise HTTPException(status_code=404, detail = "No elevator status found")
     
     # Pydanticスキーマにデータをマッピングして返す

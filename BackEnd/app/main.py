@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .api import routes
 from database import database, models # models.pyをインポートすることでテーブル定義を認識させる
-
 # データベースにテーブルが存在しない場合、ここで作成
 # 本番環境ではAlembicなどのマイグレーションツールを推奨
 
@@ -15,6 +14,7 @@ app = FastAPI(title="Elevator Monitoring API")
 # 開発環境ではlocalhost:3000を許可
 origins = [
     "http://localhost:3000",  # Reactのデフォルト開発サーバーのポート
+    # "http://localhost:5173"
 ]
 
 app.add_middleware(
