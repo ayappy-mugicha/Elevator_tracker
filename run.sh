@@ -176,7 +176,7 @@ install_dependenceis() {
         [amzn]="dnf"
     )
 
-    local REQUIRED_CMDS=("python3" "npm" "mysql")
+    local REQUIRED_CMDS=("python3" "npm" "mysql-server")
     log "依存関係の確認中"
     OS_NAME=""
     PYTHON_EXE=true
