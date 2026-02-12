@@ -5,8 +5,8 @@ PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 BACKEND_DIR="$PROJECT_ROOT/BackEnd"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 FRONTEND_DATA="$FRONTEND_DIR/node_modules"
-ENV_PATH="$BACKEND_DIR/.env"
-
+FRONT_ENV_PATH="$FRONTEND_DIR/.env"
+BACKEND_ENV_PATH="$BACKEND_DIR/.env"
 VENV_NAME="Elevetor"
 ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
 REQUIREMENTS="$BACKEND_DIR/requirements.txt"
@@ -16,6 +16,7 @@ PID_DIR="$PROJECT_ROOT/run" # PIDファイル用のディレクトリを定義
 mkdir -p "$PID_DIR" # PIDファイル用のディレクトリを作成
 mkdir -p "$LOG_DIR" # ログディレクトリを作成
 AUTO_YES=false
+TEST_MODE=false
 
 # 実行中のプロセスを追跡するためのPIDファイルを各のするディレクトリ
 PID_MQTT="$PID_DIR/mqtt_worker.pid"
@@ -72,39 +73,70 @@ check_environment(){
             log "仮想環境の有効化をしました。続いてモジュールをインポートします"
             "$VENV_NAME/bin/pip" install -r "$REQUIREMENTS" # REQUIREMENTS変数を引用符で囲む
             log "モジュールをインポートできました"
+            sleep 1
         else
             log "了解です。終了します"
             exit 1
         fi
     fi
     log "仮想環境の確認完了"
-    log "データベースを確認中"
-    # データベースの接続確認
-    if [ -f "$ENV_PATH" ]; then
-        export $(grep -v '^#' $ENV_PATH | xargs)
-        if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
-            log "データベース '$DB_NAME' を確認できました。"
+    log .envファイルの確認中
+    
+    if [ ! -f "$BACKEND_ENV_PATH" ]; then
+        log "バックエンドの.envファイルとフロントエンドの.envファイルが見つかりません:"
+        log ".env.exampleをコピーして.envファイルを作成しますか"
+        if [ "$AUTO_YES" = true ]; then
+            answer="y"
         else
-            log "エラー: データベース '$DB_NAME' を確認できません。"
-            if [ "$AUTO_YES" = true ]; then
-                answer="y"
-            else
-                read -p "データベースを作成しますか?[y/n]: " answer
-            fi
-            echo ""
-            if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
-
-                log "データベースを作成中"
-                python "$BACKEND_DIR/app/database/create_tables.py"
-                log "データベースを作成しました"
-            else
-                log "了解です。終了します"
-                exit 1
-            fi
+            read -p ".envファイルを作成しますか [y/n]: " answer
         fi
-    else
-        log "警告: .envファイルが見つからないため、データベース接続確認をスキップします: $ENV_PATH"
+        echo ""
+        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+            cp "$BACKEND_DIR/.env.example" "$BACKEND_ENV_PATH"
+            cp "$FRONTEND_DIR/.env.example" "$FRONT_ENV_PATH"
+            
+            read -p "DB_USERを設定してください: " db_user
+            sed -i "s/DB_USER=.*/DB_USER=${db_user}/" "$BACKEND_ENV_PATH"
+
+            read -p "DB_PASSWORDを設定してください: " db_password
+            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${db_password}/" "$BACKEND_ENV_PATH"
+            
+            read -p "DB_NAMEを設定してください: " db_name
+            sed -i "s/DB_NAME=.*/DB_NAME=${db_name}/" "$BACKEND_ENV_PATH"
+            
+            log ".envファイルを作成しました"
+            sleep 1
+        else
+            log "了解です。終了します"
+            exit 1
+        fi
     fi
+
+    # データベースの接続確認
+    log "データベースを確認中"
+    export $(grep -v '^#' $BACKEND_ENV_PATH | xargs)
+    if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
+        log "データベース '$DB_NAME' を確認できました。"
+    else
+        log "エラー: データベース '$DB_NAME' を確認できません。"
+        if [ "$AUTO_YES" = true ]; then
+            answer="y"
+        else
+            read -p "データベースを作成しますか?[y/n]: " answer
+        fi
+        echo ""
+        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+
+            log "データベースを作成中"
+            python "$BACKEND_DIR/app/database/create_tables.py"
+            sleep 1
+            log "データベースを作成しました"
+        else
+            log "了解です。終了します"
+            exit 1
+        fi
+    fi
+    log "データベースの確認完了"
     log "npm確認中"
 
     if [ ! -d "$FRONTEND_DATA" ] ; then
@@ -117,6 +149,7 @@ check_environment(){
         if [[ "$answer" == "y" || "$answer" == "Y" ]];then
             log "npm install を実行中"
             (cd "$FRONTEND_DIR" && npm install)
+            sleep 1
             log "npmは正常に実行されました"
         else
             log "実行をキャンセルします"
@@ -140,6 +173,7 @@ install_dependenceis() {
         [opensuse]="zypper"
         [centos]="dnf"
         [rhel]="dnf"
+        [amzn]="dnf"
     )
 
     local REQUIRED_CMDS=("python3" "npm" "mysql")
@@ -186,6 +220,7 @@ install_dependenceis() {
         if ! command -v "$tool" &> /dev/null; then
             log "依存関係 '$tool' が見つかりません。インストールします。"
             sudo $CMD install -y "$tool"
+            sleep 1
             log "依存関係 '$tool' のインストールが完了しました。"
         else
             log "依存関係 '$tool' はすでにインストールされています。"
@@ -197,34 +232,40 @@ backend() {
     log "バックエンドを起動"
     #仮想環境を有効化
     . $ACTIVATE_VENV
+    sleep 2
     log "仮想環境を有効化完了"
+    sleep 1
     # MQTTワーカーを起動
     log "MQTTワーカーをバックグラウンドで起動中"
     (
         cd "$BACKEND_DIR"
         # setsid を使うと新しいプロセスセッションを開始でき、グループ kill が確実になります
-        setsid python -m app.workers.mqtt_worker > "$LOG_DIR/mqtt_worker.log" 2>&1 &
+        setsid python -u -m app.workers.mqtt_worker > "$LOG_DIR/mqtt_worker.log" 2>&1 &
         echo $! > "$PID_MQTT" #PIDをファイルに保存
     )
+    sleep 2
     log "MQTTワーカー起動完了"
 
     # testsendを有効化
-    if [ "$AUTO_YES" = true ]; then
-        log "テスト用MQTTパブリッシャー起動完了"
+    if [ "$TEST_MODE" = true ]; then
         (
             cd "$BACKEND_DIR"
             setsid python -u -m app.workers.testsendmqtt > "$LOG_DIR/testsendmqtt.log" 2>&1 &
             echo $! > "$PID_MQTTPUB" #PIDをファイルに保存
         )
+        sleep 1
+        log "テスト用MQTTパブリッシャー起動完了"
     fi
 
     # FastAPIの起動
+    sleep 1
     log "Fastapi サーバーをバックグラウンドで起動中"
     (
         cd "$BACKEND_DIR"
         setsid uvicorn app.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/fastapi.log" 2>&1 &
         echo $! > "$PID_FASTAPI" # PID をファイルに保存
     )
+    sleep 3
     log "fastapiサーバー起動完了"
 
 }
@@ -232,12 +273,15 @@ backend() {
 frontend() {
     log "フロントエンドを起動"
     log "react開発サーバーをバックグラウンドで起動中"
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
+    log 外部IP: $LOCAL_IP
     (
         cd "$FRONTEND_DIR"
+        sed -i "s/REACT_APP_BACKEND_URL=.*/REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000/" "$FRONT_ENV_PATH"
         setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
         echo $! > "$PID_REACT" # pidをファイルに保存
     )
-    sleep 1 # React開発サーバーの初期化を待機
+    sleep 2 # React開発サーバーの初期化を待機
     echo ""
     awk 'FNR==2,NFR==10' "$LOG_DIR/react.log" || true # URLを表示
     echo ""
@@ -245,11 +289,19 @@ frontend() {
     log "システムが稼働中です。ctrl+Cですべてを停止します"
 }
 # -y オプションがあるとき
-while getopts "y" opt; do
+while getopts "ty" opt; do
     case $opt in
-        y) AUTO_YES=true ;;
+        y) 
+            AUTO_YES=true 
+            log "すべての確認プロンプトに自動的に 'yes' と答えます"
+        ;;
+        t) 
+            TEST_MODE=true
+            log "テストモードが有効になりました。テスト用MQTTパブリッシャーが起動します"
+        ;;
     esac
 done
+
 # crl+C が押されたcleanup関数を呼び出す
 trap cleanup EXIT
 
@@ -263,8 +315,10 @@ frontend
 
 # コンソール表示用
 # tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log" -f "$LOG_DIR/testsendmqtt.log"
+# tail -f "$LOG_DIR/fastapi.log"
 
 # 無限ループでスクリプトを実行し続ける
 while true; do
     sleep 1;
 done
+# wait
