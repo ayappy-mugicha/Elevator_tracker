@@ -10,14 +10,15 @@ interface ElevatorStatus {
 }
 
 // バックエンドのwebsocketURL Fastapi が稼働している場所を指定します。
-const WS_URL = "ws://localhost:8000/ws/elevator";
-
+// Viteのプロキシを経由して接続するため、現在のホストを基準にURLを生成します。
+// const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+// const WS_URL = `${protocol}//${window.location.host}/ws/elevator`;
+    const WS_URL = `ws://localhost:8000/ws/elevator`;
 export const useElevatorWebSocket = () => {
     const [status, setStatus] = useState<ElevatorStatus[]>([]);
     const [isConnected, setIsConnected] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const wsRef = useRef<WebSocket | null>(null);
-
     // 接続処理をusecallbackでラップ
     const connect = useCallback(() => { // コールバックコネクト
         console.log("WebSocket接続を試みています..."); // 接続試行のログ

@@ -1,12 +1,12 @@
-import { StrictMode } from 'react'
 import './App.css'
-import ElevatorStatusDisplay from './components/ElevatorStatusDisplay'
+import ElevatorStatusDisplay from './components/ElevatorStatusDisplay.tsx'
+// import React from 'react';
 function App() {
   return (
-    <div className='App' style={{display:'flex', justifyContent:'center',alignItems:'center', minHeight:'100vh',margin:0}}>
+    <div>
       <ElevatorStatusDisplay />
     </div>
   )
 }
-
+// className="App"style={{display:'flex', justifyContent:'center',alignItems:'center', minHeight:'100vh',margin:0}}
 export default App
