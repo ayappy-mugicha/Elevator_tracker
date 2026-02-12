@@ -130,7 +130,7 @@ check_environment(){
         if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
 
             log "データベースを作成中"
-            python "$BACKEND_DIR/app/database/create_tables.py"
+            "$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
             sleep 1
             log "データベースを作成しました"
         else
