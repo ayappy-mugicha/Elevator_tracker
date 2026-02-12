@@ -191,9 +191,9 @@ install_dependenceis() {
     fi
     
     # OSの種類に応じてコマンドを選択
-    INSTALL_CMD=${OS_COMMANDS[$OS_NAME]}
-    log "パッケージマネージャー: $INSTALL_CMD"
-    if [ -z "$INSTALL_CMD" ]; then
+    CMD=${OS_COMMANDS[$OS_NAME]}
+    log "パッケージマネージャー: $CMD"
+    if [ -z "$CMD" ]; then
         log "対応していないOSです: $OS_NAME"
         exit 1
     fi
