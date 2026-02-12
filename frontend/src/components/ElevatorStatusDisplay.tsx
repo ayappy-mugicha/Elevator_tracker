@@ -21,7 +21,12 @@ const ElevatorCard: React.FC<{ data: any }> = ({ data }) => {
   const currentFloor = data.current_floor || '-';
   const occupancy = data.occupancy ?? '-';
   const direction = data.direction ?? 'STOP';
-  const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString() : '--:--:--';
+  const timestamp = data.timestamp ? new Date(data.timestamp).toLocaleTimeString( 
+    "ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }) : '--/--/-- --:--:--';
 
   return (
     <div className={styles.elevatorIDCard}>

@@ -58,7 +58,7 @@ export const useElevatorWebSocket = () => {
                 });
             } catch (e) {
                 console.error("受信データ解析エラー:",e);
-                setError('データの解析中に問題が発生しました');
+                setError('データの解析中に問題が発生しました: ');
             }
         };
 
@@ -70,7 +70,7 @@ export const useElevatorWebSocket = () => {
 
         ws.onerror = (e) => {
             console.log("websocketエラー",e);
-            setError("接続エラーが発生しました");
+            setError("接続エラーが発生しました: ");
             ws.close();
         };
     }, []);
