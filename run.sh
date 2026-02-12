@@ -92,8 +92,10 @@ check_environment(){
         fi
         echo ""
         if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
-            cp "$BACKEND_DIR/.env.example" "$BACKEND_ENV_PATH"
-            cp "$FRONTEND_DIR/.env.example" "$FRONT_ENV_PATH"
+            log ".envファイルを作成中"
+
+            cp "$BACKEND_DIR/.env.exsample" "$BACKEND_ENV_PATH"
+            cp "$FRONTEND_DIR/.env.exsample" "$FRONT_ENV_PATH"
             
             read -p "DB_USERを設定してください: " db_user
             sed -i "s/DB_USER=.*/DB_USER=${db_user}/" "$BACKEND_ENV_PATH"
