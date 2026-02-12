@@ -23,10 +23,10 @@ PID_MQTT="$PID_DIR/mqtt_worker.pid"
 PID_MQTTPUB="$PID_DIR/testsendmqtt.pid"
 PID_FASTAPI="$PID_DIR/fastapi_server.pid"
 PID_REACT="$PID_DIR/react_dev.pid"
-
+DEBUG_MODE=true
 # logを出すための関数(かっこいいから)
 log() {
-    DEBUG_MODE=true
+    
     # ログ出力用の関数
     if [ "$DEBUG_MODE" = true ]; then
         echo -e "[LOG] $(date +'%H:%M:%S') - $1"
@@ -218,7 +218,7 @@ install_dependenceis() {
     log "依存関係が不足しています。インストールを開始します。"
     sudo $CMD update
 
-    for tool in "$REQUIRED_CMDS[@]"; do
+    for tool in "${REQUIRED_CMDS[@]}"; do
         if ! command -v "$tool" &> /dev/null; then
             log "依存関係 '$tool' が見つかりません。インストールします。"
             sudo $CMD install -y "$tool"
@@ -279,13 +279,13 @@ frontend() {
     log 外部IP: $LOCAL_IP
     (
         cd "$FRONTEND_DIR"
-        sed -i "s/REACT_APP_BACKEND_URL=.*/REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000/" "$FRONT_ENV_PATH"
+        sed -i "s|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000|" "$FRONT_ENV_PATH"
         setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
         echo $! > "$PID_REACT" # pidをファイルに保存
     )
     sleep 2 # React開発サーバーの初期化を待機
     echo ""
-    awk 'FNR==2,NFR==10' "$LOG_DIR/react.log" || true # URLを表示
+    awk 'NR>=2,NR<=10' "$LOG_DIR/react.log" || true # URLを表示
     echo ""
     log "起動完了"
     log "システムが稼働中です。ctrl+Cですべてを停止します"
