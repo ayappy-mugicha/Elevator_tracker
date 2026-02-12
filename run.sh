@@ -187,10 +187,12 @@ install_dependenceis() {
     if [ -f /etc/os-release ]; then
         . /etc/os-release
         OS_NAME=$ID
+        log "OS検出: $OS_NAME"
     fi
     
     # OSの種類に応じてコマンドを選択
     INSTALL_CMD=${OS_COMMANDS[$OS_NAME]}
+    log "パッケージマネージャー: $INSTALL_CMD"
     if [ -z "$INSTALL_CMD" ]; then
         log "対応していないOSです: $OS_NAME"
         exit 1
