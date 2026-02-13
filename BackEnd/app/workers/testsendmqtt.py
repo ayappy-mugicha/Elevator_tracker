@@ -35,18 +35,8 @@ def connect_mqtt_publisher():
 def publish_elevator_status(client, topic, elevator_id):
     current_floor = random.randint(1, 10) # 1階から10階までのランダムな階
     occupancy = random.randint(0, 5)     # 0人から5人までのランダムな人数
-    # direction = random.choice(["UP", "DOWN", "STOP"]) # ランダムな方向
-    direction = random.randint(0,2)
+    direction = random.randint(0,2)# ランダムな方向
 
-    # 送信するデータをJSON形式で作成
-    # payload = {
-    #     "elevator_id": elevator_id,
-    #     "current_floor": current_floor,
-    #     "occupancy": occupancy,
-    #     "direction": direction,
-    #     "timestamp": time.time()
-    # }
-    # json_payload = struct.pack(json.dumps(payload))
     json_payload = struct.pack(
         config.settings.FORMAT_STR,
         elevator_id,

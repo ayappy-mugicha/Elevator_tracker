@@ -27,6 +27,8 @@ log() {
 
 
 check_environment(){
+        
+    export $(grep -v '^#' $ENV_PATH | xargs)
     log "仮想環境の確認中"
     if [ ! -f "$ACTIVATE_VENV" ]; then
         log "仮想環境が見つかりません: $ACTIVATE_VENV"
@@ -84,26 +86,22 @@ check_environment(){
 
     # データベースの接続確認
     log "データベースを確認中"
-    export $(grep -v '^#' $ENV_PATH | xargs)
-    log "MySQLユーザーの設定を確認中..."
-    if ! mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e ";" >/dev/null 2>&1; then
-        log "MySQLユーザー '${DB_USER}' が存在しないか、接続できません。ユーザーを作成します..."
-        sudo mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
-        sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost';"
-        sudo mysql -u root -e "FLUSH PRIVILEGES;"
-        log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
-        sleep 1
-    fi
     # その後、既存のデータベース接続確認へ進む
     log "データベースを確認中"
     if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
         log "データベース '$DB_NAME' を確認できました。"
     else
         log "エラー: データベース '$DB_NAME' を確認できません。"
+
         [[ "$AUTO_YES" = true ]] && read -p "データベースを作成しますか?[y/n]: " answer || answer="y"
         echo ""
 
         if [[ "$answer" =~ ^[Yy]$ ]]; then
+            log "MySQLユーザー '${DB_USER}' が存在しないか、接続できません。ユーザーを作成します..."
+            sudo mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
+            sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost';"
+            sudo mysql -u root -e "FLUSH PRIVILEGES;"
+            log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
             log "データベースを作成中"
             "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
             sleep 1
@@ -117,12 +115,9 @@ check_environment(){
     log "npm確認中"
 
     if [ ! -d "$FRONTEND_DATA" ] ; then
-        if [ "$AUTO_YES" = true ]; then
-                answer="y"
-        else
-            read -p "$FRONTEND_DATA が見つかりませんでした。npm installを実行しますか[y/n]: " answer
-        fi
+        [[ "$AUTO_YES" = true ]] && read -p "$FRONTEND_DATA が見つかりませんでした。npm installを実行しますか[y/n]: " answer || answer="y"
         echo ""
+
         if [[ "$answer" =~ ^[Yy]$ ]];then
             log "npm install を実行中"
             (cd "$FRONTEND_DIR" && npm install)
@@ -167,10 +162,16 @@ install_dependencies() {
         
         sudo $CMD install -y python3 python3-venv python3-pip
     fi
+    # 2. Node.js の確認とインストール
+    if ! command -v nodejs &> /dev/null; then
+        log "Node.js をインストールします"
+        sudo $CMD install -y nodejs npm
+    fi
 
-    if ! python3 -m venv --help &> /dev/null; then
-        log "python3-venv をインストールします"
-        if [ "$OS_NAME" = "ubuntu" ]; then
+    if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+
+        if ! python3 -m venv --help &> /dev/null; then
+            log "python3-venv をインストールします"
             # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
             sudo $CMD install -y python3-venv || sudo $CMD install -y python3.12-venv
             PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
@@ -179,39 +180,57 @@ install_dependencies() {
             # python3.12-venv などの具体的なパッケージ名を指定してインストール
             sudo $CMD update -y
             sudo $CMD install -y "python${PY_VER}-venv" || sudo $CMD install -y python3-venv
-        else
-            sudo $CMD install -y python3-venv
+            
         fi
-    fi
-
-    # 2. MySQL の確認とインストール (コマンド名は mysql)
-    if ! command -v mysql &> /dev/null; then
-        log "MySQL をインストールします"
-        # Debian/Ubuntu系なら mysql-server、それ以外は OS に合わせる
-        if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+        # 2. MySQL の確認とインストール (コマンド名は mysql)
+        if ! command -v mysql &> /dev/null; then
+            log "MySQL をインストールします"
             sudo $CMD install -y mysql-server
-        else
-            sudo $CMD install -y mariadb-server # RedHat系などはMariaDBが一般的
         fi
-    fi
-
-
-
-    # 3. Node.js / npm の確認とインストール
-    if ! command -v node &> /dev/null || [[ $(node -v | cut -d'.' -f1 | sed 's/v//') -lt 20 ]]; then
-        log "Node.js 20系をインストールまたはアップグレードします"
-        if [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
+        # 3. Node.js の確認とインストール
+        if ! command -v node &> /dev/null || [[ $(node -v | cut -d'.' -f1 | sed 's/v//') -lt 20 ]]; then
+            log "Node.js 20系をインストールまたはアップグレードします"
             # NodeSource を使用して 20.x を導入
             curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
             sudo $CMD install -y nodejs
-        else
-            # 他のOS（Fedoraなど）の場合
-            sudo $CMD install -y nodejs
         fi
-    fi
+        # ファイアウォールの設定 (ufw)
+        # if ! command -v ufw &> /dev/null; then
+        #     log "ufwをインストール中"
+        #     sudo $CMD install -y ufw
+        #     sudo ufw enable
+        # fi
 
+        # if ! sudo ufw status | grep -q "$VITE_PORT/tcp"; then
+        #     log "ポート $VITE_PORT を許可リストに追加中..."
+        #     # sudo ufw allow $VITE_PORT/tcp
+        # fi
+    else
+        # 2. MariaDB の確認とインストール (コマンド名は mariadb または mysql)
+        if ! command -v mariadb &> /dev/null; then
+            log "MariaDB をインストールします"
+            sudo $CMD install -y mariadb-server # RedHat系などはMariaDBが一般的
+        fi
+        # # 3. firewalld の確認とインストール
+        # if ! command -v firewall-cmd &> /dev/null; then
+        #     log "firewalldをインストール中"
+        #     sudo $CMD install -y firewalld
+        #     sudo systemctl start firewalld
+        #     sudo systemctl enable firewalld
+        # fi
+        
+        # # ファイアウォールの設定 (firewalld)
+        # if sudo firewall-cmd --list-ports | grep -q "$VITE_PORT/tcp"; then
+        #     log "ポート $VITE_PORT は許可済み"
+        # else
+        #     log "ポート $VITE_PORT を許可リストに追加中..."
+        #     # sudo firewall-cmd --add-port=$VITE_PORT/tcp --permanent
+        #     # sudo firewall-cmd --reload
+        # fi
+    fi
     log "依存関係の確認完了"
 }
+# -y オプションがあるとき
 while getopts "y" opt; do
     case $opt in
         y) 
@@ -224,7 +243,6 @@ done
 # 環境を確認
 install_dependencies
 check_environment
-
 log "環境設定が完了しました"
 
 log "このままrun.shを実行しますか?"

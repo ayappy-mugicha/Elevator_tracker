@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from typing import Optional
 
 # プロジェクトのルートディレクトリを指定
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 
 # .envファイルを明示的に読み込み、変数展開（Interpolation）を有効にする
 # これにより、.env内で ${VAR} 形式の参照が可能になります

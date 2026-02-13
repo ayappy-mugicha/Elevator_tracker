@@ -4,7 +4,6 @@ run
 logs
 export_data
 *.pid
-__pycache__/
 *.pyc
 *.pyo
 *.pyd
