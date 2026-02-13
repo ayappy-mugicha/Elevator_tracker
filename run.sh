@@ -202,10 +202,17 @@ install_dependencies() {
         if [ "$OS_NAME" = "ubuntu" ]; then
             # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
             sudo $CMD install -y python3-venv || sudo $CMD install -y python3.12-venv
+            PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
+            log "検出されたPythonバージョン: $PY_VER"
+            
+            # python3.12-venv などの具体的なパッケージ名を指定してインストール
+            sudo $CMD update -y
+            sudo $CMD install -y "python${PY_VER}-venv" || sudo $CMD install -y python3-venv
         else
             sudo $CMD install -y python3-venv
         fi
     fi
+
     # 2. MySQL の確認とインストール (コマンド名は mysql)
     if ! command -v mysql &> /dev/null; then
         log "MySQL をインストールします"
@@ -218,16 +225,8 @@ install_dependencies() {
     fi
 
 
-    # 3. Node.js / npm の確認
-    # if ! command -v npm &> /dev/null; then
-    #     log "Node.js / npm をインストールします"
-    #     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-    #         # 最新を入れるなら NodeSource がいいですが、簡易版として
-    #         sudo $CMD install -y nodejs npm
-    #     else
-    #         sudo $CMD install -y nodejs
-    #     fi
-    # fi
+
+    # 3. Node.js / npm の確認とインストール
     if ! command -v node &> /dev/null || [[ $(node -v | cut -d'.' -f1 | sed 's/v//') -lt 20 ]]; then
         log "Node.js 20系をインストールまたはアップグレードします"
         if [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
