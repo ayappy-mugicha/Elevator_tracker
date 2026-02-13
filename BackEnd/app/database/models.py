@@ -4,7 +4,7 @@ from time import timezone
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.sql import func
-from .database import Base
+from database import Base
 
 class ElevatorStatus(Base):
     """ エレベーターの状態を格納するテーブル """
