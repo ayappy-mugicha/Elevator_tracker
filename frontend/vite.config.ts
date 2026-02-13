@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
       hmr: {
         host: backendHost,
         port: frontendPort,
+        clientPort: frontendPort,
       }
     }
   }
