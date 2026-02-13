@@ -176,11 +176,13 @@ install_dependencies() {
     if [ -z "$CMD" ]; then
         log "対応していないOSです: $OS_NAME"; exit 1
     fi
+    sudo $CMD update -y
+    sudo $CMD upgrade -y
 
     # 1. Python の確認とインストール
     if ! command -v python3 &> /dev/null; then
         log "Python3 をインストールします"
-        sudo $CMD update -y
+        
         sudo $CMD install -y python3 python3-venv python3-pip
     fi
 
