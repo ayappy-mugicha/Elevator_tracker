@@ -85,7 +85,7 @@ backend() {
     log "Fastapi サーバーをバックグラウンドで起動中"
     (
         cd "$BACKEND_DIR"
-        setsid uvicorn app.main:app --host "$BACKEND_HOST" --port "$BACKEND_PORT" > "$LOG_DIR/fastapi.log" 2>&1 &
+        setsid uvicorn app.main:app --host "$HOST" --port "$BACKEND_PORT" > "$LOG_DIR/fastapi.log" 2>&1 &
         echo $! > "$PID_FASTAPI" # PID をファイルに保存
     )
     sleep 3
@@ -102,7 +102,7 @@ frontend() {
     (
         cd "$FRONTEND_DIR"
         sed -i "s|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000|" "$ENV_PATH"
-        setsid npm run dev -- --host > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
+        setsid npm run dev -- --host "$HOST"> "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
         echo $! > "$PID_REACT" # pidをファイルに保存
     )
     sleep 2 # React開発サーバーの初期化を待機
