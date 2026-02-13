@@ -219,12 +219,23 @@ install_dependencies() {
 
 
     # 3. Node.js / npm の確認
-    if ! command -v npm &> /dev/null; then
-        log "Node.js / npm をインストールします"
-        if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-            # 最新を入れるなら NodeSource がいいですが、簡易版として
-            sudo $CMD install -y nodejs npm
+    # if ! command -v npm &> /dev/null; then
+    #     log "Node.js / npm をインストールします"
+    #     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+    #         # 最新を入れるなら NodeSource がいいですが、簡易版として
+    #         sudo $CMD install -y nodejs npm
+    #     else
+    #         sudo $CMD install -y nodejs
+    #     fi
+    # fi
+    if ! command -v node &> /dev/null || [[ $(node -v | cut -d'.' -f1 | sed 's/v//') -lt 20 ]]; then
+        log "Node.js 20系をインストールまたはアップグレードします"
+        if [ "$OS_NAME" = "ubuntu" ] || [ "$OS_NAME" = "debian" ]; then
+            # NodeSource を使用して 20.x を導入
+            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+            sudo $CMD install -y nodejs
         else
+            # 他のOS（Fedoraなど）の場合
             sudo $CMD install -y nodejs
         fi
     fi
