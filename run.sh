@@ -185,7 +185,16 @@ install_dependencies() {
         
         sudo $CMD install -y python3 python3-venv python3-pip
     fi
-
+    
+    if ! python3 -m venv --help &> /dev/null; then
+        log "python3-venv をインストールします"
+        if [ "$OS_NAME" = "ubuntu" ]; then
+            # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
+            sudo $CMD install -y python3-venv || sudo $CMD install -y python3.12-venv
+        else
+            sudo $CMD install -y python3-venv
+        fi
+    fi
     # 2. MySQL の確認とインストール (コマンド名は mysql)
     if ! command -v mysql &> /dev/null; then
         log "MySQL をインストールします"
@@ -196,6 +205,7 @@ install_dependencies() {
             sudo $CMD install -y mariadb-server # RedHat系などはMariaDBが一般的
         fi
     fi
+
 
     # 3. Node.js / npm の確認
     if ! command -v npm &> /dev/null; then
