@@ -125,8 +125,6 @@ check_environment(){
     fi
     # その後、既存のデータベース接続確認へ進む
     log "データベースを確認中"
-    if mysql -u "$DB_USER" -p"${DB_PASSWORD}" ...
-    fi
     if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
         log "データベース '$DB_NAME' を確認できました。"
     else
