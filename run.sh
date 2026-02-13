@@ -5,8 +5,8 @@ PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 BACKEND_DIR="$PROJECT_ROOT/BackEnd"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 FRONTEND_DATA="$FRONTEND_DIR/node_modules"
-FRONT_ENV_PATH="$FRONTEND_DIR/.env"
-BACKEND_ENV_PATH="$BACKEND_DIR/.env"
+ENV_PATH="$PROJECT_ROOT/.env"
+EXAMPLE_ENV_PATH="$PROJECT_ROOT/.env.example"
 VENV_NAME="Elevetor"
 ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
 REQUIREMENTS="$BACKEND_DIR/requirements.txt"
@@ -23,6 +23,7 @@ PID_MQTT="$PID_DIR/mqtt_worker.pid"
 PID_MQTTPUB="$PID_DIR/testsendmqtt.pid"
 PID_FASTAPI="$PID_DIR/fastapi_server.pid"
 PID_REACT="$PID_DIR/react_dev.pid"
+OS_RELEASE="/etc/os-release"
 DEBUG_MODE=true
 # logを出すための関数(かっこいいから)
 log() {
@@ -31,7 +32,7 @@ log() {
     if [ "$DEBUG_MODE" = true ]; then
         echo -e "[LOG] $(date +'%H:%M:%S') - $1"
     fi
-    DEBUG_MODE=false    
+    # DEBUG_MODE=false    
 }
 # スクリプト終了時にすべてのバックグラウンドプロセスを終了させる関数
 cleanup(){
@@ -56,21 +57,18 @@ cleanup(){
 
 check_environment(){
     log "仮想環境の確認中"
-    
     if [ ! -f "$ACTIVATE_VENV" ]; then
         log "仮想環境が見つかりません: $ACTIVATE_VENV"
-        if [ "$AUTO_YES" = true ]; then
-            answer="y"
-        else
-            read -p "仮想環境を構築しますか [y/n]: " answer
-        fi
+        [[ "$AUTO_YES" != true ]] && read -p "仮想環境を構築しますか [y/n]: " answer|| answer="y"
+
         echo ""
-        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
 
             log "仮想環境を構築します"
             python3 -m venv "$VENV_NAME"
             
             log "仮想環境の有効化をしました。続いてモジュールをインポートします"
+            "$VENV_NAME/bin/pip" install --upgrade pip
             "$VENV_NAME/bin/pip" install -r "$REQUIREMENTS" # REQUIREMENTS変数を引用符で囲む
             log "モジュールをインポートできました"
             sleep 1
@@ -82,29 +80,28 @@ check_environment(){
     log "仮想環境の確認完了"
     log .envファイルの確認中
     
-    if [ ! -f "$BACKEND_ENV_PATH" ]; then
+    if [ ! -f "$ENV_PATH" ]; then
         log "バックエンドの.envファイルとフロントエンドの.envファイルが見つかりません:"
         log ".env.exampleをコピーして.envファイルを作成しますか"
-        if [ "$AUTO_YES" = true ]; then
-            answer="y"
-        else
-            read -p ".envファイルを作成しますか [y/n]: " answer
-        fi
+        [[ "$AUTO_YES" != true ]] && read -p ".envファイルを作成しますか [y/n]: " answer || answer="y"
         echo ""
-        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
             log ".envファイルを作成中"
-
-            cp "$BACKEND_DIR/.env.exsample" "$BACKEND_ENV_PATH"
-            cp "$FRONTEND_DIR/.env.exsample" "$FRONT_ENV_PATH"
-            
-            read -p "DB_USERを設定してください: " db_user
-            sed -i "s/DB_USER=.*/DB_USER=${db_user}/" "$BACKEND_ENV_PATH"
-
-            read -p "DB_PASSWORDを設定してください: " db_password
-            sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=${db_password}/" "$BACKEND_ENV_PATH"
-            
-            read -p "DB_NAMEを設定してください: " db_name
-            sed -i "s/DB_NAME=.*/DB_NAME=${db_name}/" "$BACKEND_ENV_PATH"
+            cp "$EXAMPLE_ENV_PATH" "$ENV_PATH"
+            # 入力関数（空入力を防ぐ）
+            ask_and_set() {
+                local prompt=$1
+                local key=$2
+                local val=""
+                while [ -z "$val" ]; do
+                    read -p "$prompt: " val
+                done
+                # スラッシュが含まれても大丈夫なように | をデリミタに使用
+                sed -i "s|^${key}=.*|${key}=${val}|" "$ENV_PATH"
+            }
+            ask_and_set "DB_USERを設定してください" "DB_USER"
+            ask_and_set "DB_PASSWORDを設定してください" "DB_PASSWORD"
+            ask_and_set "DB_NAMEを設定してください" "DB_NAME"
             
             log ".envファイルを作成しました"
             sleep 1
@@ -116,21 +113,17 @@ check_environment(){
 
     # データベースの接続確認
     log "データベースを確認中"
-    export $(grep -v '^#' $BACKEND_ENV_PATH | xargs)
+    export $(grep -v '^#' $ENV_PATH | xargs)
     if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
         log "データベース '$DB_NAME' を確認できました。"
     else
         log "エラー: データベース '$DB_NAME' を確認できません。"
-        if [ "$AUTO_YES" = true ]; then
-            answer="y"
-        else
-            read -p "データベースを作成しますか?[y/n]: " answer
-        fi
+        [[ "$AUTO_YES" = true ]] && read -p "データベースを作成しますか?[y/n]: " answer || answer="y"
         echo ""
-        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
 
+        if [[ "$answer" =~ ^[Yy]$ ]]; then
             log "データベースを作成中"
-            "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/create_tables.py"
+            "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
             sleep 1
             log "データベースを作成しました"
         else
@@ -148,7 +141,7 @@ check_environment(){
             read -p "$FRONTEND_DATA が見つかりませんでした。npm installを実行しますか[y/n]: " answer
         fi
         echo ""
-        if [[ "$answer" == "y" || "$answer" == "Y" ]];then
+        if [[ "$answer" =~ ^[Yy]$ ]];then
             log "npm install を実行中"
             (cd "$FRONTEND_DIR" && npm install)
             sleep 1
@@ -163,75 +156,59 @@ check_environment(){
     echo ""
 }
 # 依存関係をインストールする関数
-install_dependenceis() {
-    # OSの種類を判別して依存関係をインストールする関数
-
-    declare -A OS_COMMANDS
-    OS_COMMANDS=(
-        [debian]="apt"
-        [ubuntu]="apt"
-        [fedora]="dnf"
-        [arch]="pacman"
-        [opensuse]="zypper"
-        [centos]="dnf"
-        [rhel]="dnf"
-        [amzn]="dnf"
+install_dependencies() {
+    log "依存関係の確認中"
+    
+    declare -A OS_COMMANDS=(
+        [debian]="apt" [ubuntu]="apt" [fedora]="dnf" [arch]="pacman"
+        [opensuse]="zypper" [centos]="dnf" [rhel]="dnf" [amzn]="dnf"
     )
 
-    local REQUIRED_CMDS=("python3" "nodejs" "mysql-server" "python3-venv" "npm")
-    log "依存関係の確認中"
-    OS_NAME=""
-    PYTHON_EXE=true
-    NPM_EXE=true
-    MYSQL_EXE=true
-    
-    # OS情報を取得
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
+    if [ -f "/etc/os-release" ]; then
+        . "/etc/os-release"
         OS_NAME=$ID
         log "OS検出: $OS_NAME"
+    else 
+        log "OS情報を取得できません"; exit 1
     fi
-    
-    # OSの種類に応じてコマンドを選択
+
     CMD=${OS_COMMANDS[$OS_NAME]}
-    log "パッケージマネージャー: $CMD"
     if [ -z "$CMD" ]; then
-        log "対応していないOSです: $OS_NAME"
-        exit 1
+        log "対応していないOSです: $OS_NAME"; exit 1
     fi
 
-    # コマンドの存在を確認
+    # 1. Python の確認とインストール
     if ! command -v python3 &> /dev/null; then
-        PYTHON_EXE=false
+        log "Python3 をインストールします"
+        sudo $CMD update -y
+        sudo $CMD install -y python3 python3-venv python3-pip
     fi
-    if ! command -v npm &> /dev/null; then
-        NPM_EXE=false
-    fi
+
+    # 2. MySQL の確認とインストール (コマンド名は mysql)
     if ! command -v mysql &> /dev/null; then
-        MYSQL_EXE=false
-    fi
-    
-    
-    if [ "$PYTHON_EXE" = true ] && [ "$NPM_EXE" = true ] && [ "$MYSQL_EXE" = true ]; then
-        log "すべての依存関係がインストールされています。"
-        return
-    fi
-
-    log "依存関係が不足しています。インストールを開始します。"
-    sudo $CMD update
-
-    for tool in "${REQUIRED_CMDS[@]}"; do
-        if ! command -v "$tool" &> /dev/null; then
-            log "依存関係 '$tool' が見つかりません。インストールします。"
-            sudo $CMD install -y "$tool"
-            sleep 1
-            log "依存関係 '$tool' のインストールが完了しました。"
+        log "MySQL をインストールします"
+        # Debian/Ubuntu系なら mysql-server、それ以外は OS に合わせる
+        if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+            sudo $CMD install -y mysql-server
         else
-            log "依存関係 '$tool' はすでにインストールされています。"
+            sudo $CMD install -y mariadb-server # RedHat系などはMariaDBが一般的
         fi
-    done
+    fi
+
+    # 3. Node.js / npm の確認
+    if ! command -v npm &> /dev/null; then
+        log "Node.js / npm をインストールします"
+        if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
+            # 最新を入れるなら NodeSource がいいですが、簡易版として
+            sudo $CMD install -y nodejs npm
+        else
+            sudo $CMD install -y nodejs
+        fi
+    fi
+
     log "環境確認完了"
 }
+
 backend() {
     log "バックエンドを起動"
     #仮想環境を有効化
@@ -281,7 +258,7 @@ frontend() {
     log 外部IP: $LOCAL_IP
     (
         cd "$FRONTEND_DIR"
-        sed -i "s|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000|" "$FRONT_ENV_PATH"
+        sed -i "s|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000|" "$ENV_PATH"
         setsid npm run dev > "$LOG_DIR/react.log" 2>&1 & # setid を setsid に修正し、ログ出力先を変更
         echo $! > "$PID_REACT" # pidをファイルに保存
     )
@@ -310,7 +287,7 @@ done
 trap cleanup EXIT
 
 # 環境を確認
-install_dependenceis
+install_dependencies
 check_environment
 
 # バックエンドとフロントエンドを起動

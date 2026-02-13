@@ -9,8 +9,8 @@ from sqlalchemy.ext.asyncio import create_async_engine
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 # from app.database.database import SQLALCHEMY_DATABASE_URL, Base, engine
-from app.database import database
-from app.database import models
+import database
+import models
 
 async def create_database():
     """データベースが存在しない場合に作成する"""

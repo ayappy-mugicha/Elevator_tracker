@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # .envファイルを明示的に読み込み、変数展開（Interpolation）を有効にする
 # これにより、.env内で ${VAR} 形式の参照が可能になります
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(f"{BASE_DIR}/.env")
 
 class Settings(BaseSettings):
     """ 環境変数を管理するためのPydanticモデル """

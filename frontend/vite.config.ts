@@ -1,10 +1,11 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   // .env ファイルから環境変数を読み込む
-  const env = loadEnv(mode, process.cwd(), '');
+  const env = loadEnv(mode, path.resolve(__dirname, '../'), '');
   // バックエンドのホスト名を環境変数から取得。なければ'localhost'を使う
   const backendHost = env.VITE_BACKEND_HOST || 'localhost';
 

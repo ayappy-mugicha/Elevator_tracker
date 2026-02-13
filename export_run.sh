@@ -1,7 +1,7 @@
 set -e
 PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 TODAY=$(date +"%Y%m%d")
-ENV_PATH="$PROJECT_ROOT/BackEnd/.env"
+ENV_PATH="$PROJECT_ROOT/.env"
 OUTPUT_PATH="$PROJECT_ROOT/export_data/elevator_data_export_$TODAY.csv"
 SQL_FILE="$PROJECT_ROOT/BackEnd/app/database/export.sql"
 
