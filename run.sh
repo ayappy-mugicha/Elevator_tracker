@@ -114,6 +114,19 @@ check_environment(){
     # データベースの接続確認
     log "データベースを確認中"
     export $(grep -v '^#' $ENV_PATH | xargs)
+    log "MySQLユーザーの設定を確認中..."
+    if ! mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e ";" >/dev/null 2>&1; then
+        log "MySQLユーザー '${DB_USER}' が存在しないか、接続できません。ユーザーを作成します..."
+        sudo mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
+        sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost';"
+        sudo mysql -u root -e "FLUSH PRIVILEGES;"
+        log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
+        sleep 1
+    fi
+    # その後、既存のデータベース接続確認へ進む
+    log "データベースを確認中"
+    if mysql -u "$DB_USER" -p"${DB_PASSWORD}" ...
+    fi
     if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
         log "データベース '$DB_NAME' を確認できました。"
     else
@@ -185,7 +198,7 @@ install_dependencies() {
         
         sudo $CMD install -y python3 python3-venv python3-pip
     fi
-    
+
     if ! python3 -m venv --help &> /dev/null; then
         log "python3-venv をインストールします"
         if [ "$OS_NAME" = "ubuntu" ]; then
