@@ -1,45 +1,59 @@
 # Elevetor_tracker_website
 
 ## 概要
+- **背景**: 私の通っている専門学校のエレベータは今どこの階に何人乗っているのかがわからないどのくらい待てば到着するのかがわからないそういった問題がありました。<br>
+- **解決策**: Raspi + AI(YOLO) で状況を解析し、MQTT/WebSocketでリアルタイム配信。
+- **特徴**: データの蓄積による利用傾向の分析機能。
 
-私の通っている専門学校のエレベータは今どこの階に何人乗っているのかがわからないどのくらい待てば到着するのかがわからないそういった問題がありました。<br>
-エレベータにraspiとカメラを設置してAIのyoloを使って人数、階層、昇降を判断しMQTT通信を用いてサーバに送信し、情報をDBに格納。<br>
-DBで格納した情報をウェブサイトに送る <br>
-DBに格納する理由としては、日ほど分析をし、エレベータの使用予想ができるようにするためです。<br>
-ざっくりとした説明ですが概要はこのような感じです <br>
+## システム構成図
+後で作ります。
 
-## セットアップ方法と使い方
+## イメージ動作
+後で貼ります。
 
-* run.shを実行してください。そうすれば動くはず
-* run.shを動かすと最初は初期設定があるので、設定をしてください。
+## 手順
+- セットアップは、setup.shを動かせば、セットアップされます。
+    - 具体的なセットアップは、以下のとおりです。
+      * 必要な環境やモジュールなどのインストール
+      * .envファイルの作成
+      * DBのユーザーネーム パスワード データベース名
+      * DBの作成
+      * pythonとreactの環境構築
+      * ufwによるポート開放(80ポート)
+    ```bash
+        bash setup.sh
+    ```   
+- run.shを実行してください。そうすれば動くはず
+    - 実施内容
+      * バックエンドとフロントエンドの起動
+    ```bash
+        bash run.sh
+    ```
 
-```bash
-    bash run.sh
-```
-
-* export_run.shを実行するとexport_dataというフォルダー内にCSVファイルでDBのデータが保存されます。
-
-```bash
-    bash export_run.sh
-```
+- export_run.shを実行するとexport_dataというフォルダー内にCSVファイルでDBのデータが保存されます。
+    
+    ```bash
+        bash export_run.sh
+    ```
 
 ## 技術スタック
-
-* react
-* python
-* sql
-* bash
-* fastapi # API設定
-* uvicorn # web用非同期サーバー
-* sqlalchemy # DBを使うためのモジュール
-* pydantic
-* pydantic-settings
-* python-dotenv # envを読み込むためのモジュール
-* aiomysql # Mysql接続用
-* paho-mqtt # MQTTクライアント接続用
-* cryptography # 暗号化など
-* websockets # 双方通信用モジュール
-* broker.hivemq.com
+- バックエンド
+    * python
+    * mysql
+    * bash
+    * fastapi # API設定
+    * uvicorn # web用非同期サーバー
+    * sqlalchemy # DBを使うためのモジュール
+    * pydantic
+    * pydantic-settings
+    * python-dotenv # envを読み込むためのモジュール
+    * aiomysql # Mysql接続用
+    * paho-mqtt # MQTTクライアント接続用
+    * cryptography # 暗号化など
+    * websockets # 双方通信用モジュール
+    * broker.hivemq.com
+- フロントエンド
+    * react/typescript
 
 ## 開発者が学んだこと
 
@@ -116,3 +130,7 @@ reactは複雑なので、先にHTML+CSS+JavaScriptを使ったwebサイトを�
 ## 実際に導入した技術スタック
 
 * SORACOM (SORACOM Beam/Canal)
+
+## ライセンス/開発者
+- web,DB,backend開発者: ayappy-mugicha
+- 
