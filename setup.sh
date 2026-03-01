@@ -5,12 +5,19 @@ PROJECT_ROOT=$(cd "$(dirname "$0")" && pwd)
 BACKEND_DIR="$PROJECT_ROOT/BackEnd"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
 FRONTEND_DATA="$FRONTEND_DIR/node_modules"
+
 ENV_PATH="$PROJECT_ROOT/.env"
 EXAMPLE_ENV_PATH="$PROJECT_ROOT/.env.example"
+
 VENV_NAME="Elevetor"
 ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
 REQUIREMENTS="$BACKEND_DIR/requirements.txt"
 RUN="$PROJECT_ROOT/run.sh"
+
+NGINX_DIR="/etc/nginx/sites-available"
+NGINX_ENABLE="/etc/nginx/sites-enabled"
+NGINX_PATH="$VENV_NAME-project.conf"
+NGINX_TEMP="nginx.conf.template"
 AUTO_YES=false
 
 OS_RELEASE="/etc/os-release"
@@ -24,11 +31,9 @@ log() {
     fi
     # DEBUG_MODE=false    
 }
-
+export $(grep -v '^#' $ENV_PATH | xargs)
 
 check_environment(){
-        
-    export $(grep -v '^#' $ENV_PATH | xargs)
     log "仮想環境の確認中"
     if [ ! -f "$ACTIVATE_VENV" ]; then
         log "仮想環境が見つかりません: $ACTIVATE_VENV"
@@ -173,7 +178,7 @@ install_dependencies() {
         if ! python3 -m venv --help &> /dev/null; then
             log "python3-venv をインストールします"
             # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
-            sudo $CMD install -y python3-venv || sudo $CMD install -y python3.12-venv
+            sudo $CMD install -y python3.12-venv # || sudo $CMD install -y python3.12-venv
             PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
             log "検出されたPythonバージョン: $PY_VER"
             
@@ -195,16 +200,48 @@ install_dependencies() {
             sudo $CMD install -y nodejs
         fi
         # ファイアウォールの設定 (ufw)
-        # if ! command -v ufw &> /dev/null; then
-        #     log "ufwをインストール中"
-        #     sudo $CMD install -y ufw
-        #     sudo ufw enable
-        # fi
+        # Nginx の設定後でやっておいて。
+        if ! command -v ufw &> /dev/null; then
+            log "ufwをインストール中"
+            sudo $CMD install -y ufw
+        fi
 
-        # if ! sudo ufw status | grep -q "$VITE_PORT/tcp"; then
-        #     log "ポート $VITE_PORT を許可リストに追加中..."
-        #     # sudo ufw allow $VITE_PORT/tcp
-        # fi
+        log "NGINXの設定ファイルを作成中"
+        if ! command -v nginx &> /dev/null; then
+            log "nginxをインストールします"
+            sudo $CMD install -y nginx
+        fi
+        
+        envsubst '${NGINX_PORT} ${LOCAL_HOST} ${VITE_PORT} ${BACKEND_PORT}' < $NGINX_TEMP > $NGINX_PATH
+        cd $PROJECT_ROOT
+        sudo mv "$NGINX_PATH" "$NGINX_DIR/$NGINX_PATH"
+        sudo ln -sf "$NGINX_DIR/$NGINX_PATH" "$NGINX_ENABLE/"
+
+        if sudo nginx -t; then
+            log "設定を反映中"
+            sudo systemctl start nginx
+            sudo systemctl reload nginx
+            log "反映完了"
+        else
+            log "何らかのエラーがあります確認してください"
+            exit 1
+        fi
+        
+        if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
+            log "opennig port ssh $SSH_PORT"
+            sudo ufw allow $SSH_PORT/tcp
+            # sudo ufw reload
+        fi
+
+        if ! sudo ufw status | grep -q "$NGINX_PORT/tcp"; then
+            log "ポート $NGINX_PORT を許可リストに追加中..."
+            sudo ufw allow $NGINX_PORT/tcp
+            # sudo ufw reload
+        fi
+        sudo ufw enable
+        sudo ufw reload
+
+    
     else
         # 2. MariaDB の確認とインストール (コマンド名は mariadb または mysql)
         if ! command -v mariadb &> /dev/null; then

@@ -21,6 +21,7 @@ PID_MQTT="$PID_DIR/mqtt_worker.pid"
 PID_MQTTPUB="$PID_DIR/testsendmqtt.pid"
 PID_FASTAPI="$PID_DIR/fastapi_server.pid"
 PID_REACT="$PID_DIR/react_dev.pid"
+PID_NGINX="$PID_DIR/nginx.pid"
 OS_RELEASE="/etc/os-release"
 DEBUG_MODE=true
 export $(grep -v '^#' $ENV_PATH | xargs)
@@ -37,7 +38,7 @@ log() {
 cleanup(){
     log "システムをシャットダウン中"
     set +e
-    PIDS=("$PID_MQTT" "$PID_MQTTPUB" "$PID_FASTAPI" "$PID_REACT")
+    PIDS=("$PID_MQTT" "$PID_MQTTPUB" "$PID_FASTAPI" "$PID_REACT" "$PID_NGINX")
     # 安全な終了処理の関数
     for pid_file in "${PIDS[@]}"; do
         if [ -f "$pid_file" ]; then
@@ -96,9 +97,9 @@ backend() {
 frontend() {
     log "フロントエンドを起動"
     log "react開発サーバーをバックグラウンドで起動中"
-    # LOCAL_IP=$(hostname -I | awk '{print $1}')
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
 
-    log 外部IP: $LOCAL_IP
+    log "外部IP: $LOCAL_IP"
     (
         cd "$FRONTEND_DIR"
         sed -i "s|REACT_APP_BACKEND_URL=.*|REACT_APP_BACKEND_URL=http:\/\/${LOCAL_IP}:8000|" "$ENV_PATH"
@@ -107,7 +108,8 @@ frontend() {
     )
     sleep 2 # React開発サーバーの初期化を待機
     echo ""
-    awk 'NR>=2,NR<=10' "$LOG_DIR/react.log" || true # URLを表示
+    # awk 'NR>=2,NR<=10' "$LOG_DIR/react.log" || true # URLを表示
+    echo "http://$LOCAL_IP:$NGINX_PORT"
     echo ""
     log "起動完了"
     log "システムが稼働中です。ctrl+Cですべてを停止します"
@@ -135,6 +137,8 @@ trap cleanup EXIT
 # バックエンドとフロントエンドを起動
 backend
 frontend
+sudo systemctl restart nginx
+echo $! > "$PID_NGINX"
 
 # コンソール表示用
 # tail -f "$LOG_DIR/fastapi.log" -f "$LOG_DIR/mqtt.log" -f "$LOG_DIR/react.log" -f "$LOG_DIR/testsendmqtt.log"

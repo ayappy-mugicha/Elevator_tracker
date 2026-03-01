@@ -13,7 +13,9 @@ interface ElevatorStatus {
 // Viteのプロキシを経由して接続するため、現在のホストを基準にURLを生成します。
 // const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 // const WS_URL = `${protocol}//${window.location.host}/ws/elevator`;
-    const WS_URL = `ws://localhost:8000/ws/elevator`;
+
+const WS_URL = `ws://${window.location.host}/ws/elevator`;
+
 export const useElevatorWebSocket = () => {
     const [status, setStatus] = useState<ElevatorStatus[]>([]);
     const [isConnected, setIsConnected] = useState(false);

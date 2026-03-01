@@ -7,31 +7,29 @@ export default defineConfig(({ mode }) => {
   // .env ファイルから環境変数を読み込む
   const env = loadEnv(mode, path.resolve(__dirname, '../'), '');
   // バックエンドのホスト名を環境変数から取得。なければ'localhost'を使う
-  const backendHost = env.BACKEND_HOST;
+  const localHost = env.LOCAL_HOST;
   const backendPort = parseInt(env.BACKEND_PORT);
-  const backendurl = `ws://${backendHost}:${backendPort}`;
-  const frontendHost = env.HOST;
   const frontendPort = parseInt(env.VITE_PORT);
+  const host = env.HOST;
 
+  const backendWsurl = `ws://${localHost}:${backendPort}`;
 
   return {
     plugins: [react()],
     server: {
-      host: frontendHost, // 外部からのアクセスを許可
+      host: host, // 外部からのアクセスを許可
       port: frontendPort,
       proxy: {
-        '/ws/elevator': {
-          target: backendurl,
+        '/ws/': {
+          target: backendWsurl,
           ws: true,
         },
       },
       // HMR (Hot Module Replacement) が外部IPからのアクセスでも機能するように設定
       // 'localhost'への固定を解除し、Viteが接続元のホストを自動的に使用するようにします
       hmr: {
-        host: backendHost,
         port: frontendPort,
-        clientPort: frontendPort,
       }
-    }
+    },
   }
 })

@@ -1,0 +1,18 @@
+server {
+    listen ${NGINX_PORT};
+    server_name _;
+
+    location / {
+        proxy_pass http://${LOCAL_HOST}:${VITE_PORT};
+    }
+
+    location /api/ {
+        proxy_pass http://${LOCAL_HOST}:${BACKEND_PORT};
+    }
+
+    location /ws/ {
+        proxy_pass http://${LOCAL_HOST}:${BACKEND_PORT};
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
