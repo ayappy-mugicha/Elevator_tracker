@@ -136,7 +136,7 @@ check_environment(){
         log "npm確認完了確認できました"
     fi
     echo ""
-    
+
     log "NGINXに書き込み中"
     envsubst '${NGINX_PORT} ${LOCAL_HOST} ${VITE_PORT} ${BACKEND_PORT}' < $NGINX_TEMP > $NGINX_PATH
     cd $PROJECT_ROOT
@@ -242,13 +242,13 @@ install_dependencies() {
         log "ポートを確認中"
         if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
             log "opennig port ssh $SSH_PORT"
-            sudo ufw allow $SSH_PORT/tcp
+            sudo ufw allow "$SSH_PORT/tcp"
             # sudo ufw reload
         fi
 
         if ! sudo ufw status | grep -q "$NGINX_PORT/tcp"; then
             log "ポート $NGINX_PORT を許可リストに追加中..."
-            sudo ufw allow $NGINX_PORT/tcp
+            sudo ufw allow "$NGINX_PORT/tcp"
             # sudo ufw reload
         fi
         sudo ufw enable
