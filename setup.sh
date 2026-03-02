@@ -174,7 +174,7 @@ install_dependencies() {
     fi
 
     if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-
+        # install python
         if ! python3 -m venv --help &> /dev/null; then
             log "python3-venv をインストールします"
             # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
@@ -212,11 +212,22 @@ install_dependencies() {
             sudo $CMD install -y nginx
         fi
         
+        log "NGINXに書き込み中"
         envsubst '${NGINX_PORT} ${LOCAL_HOST} ${VITE_PORT} ${BACKEND_PORT}' < $NGINX_TEMP > $NGINX_PATH
         cd $PROJECT_ROOT
         sudo mv "$NGINX_PATH" "$NGINX_DIR/$NGINX_PATH"
         sudo ln -sf "$NGINX_DIR/$NGINX_PATH" "$NGINX_ENABLE/"
-        sudo rm -rf "$NGINX_ENABLE/default"
+        
+        if [ ! -f "$NGINX_DIR/$NGINX_PATH" ]; then
+            log "正常に書き込みができませんでしたnginx.conf.templateが存在してるか確認してください"
+            exit 1
+        fi
+
+        # defaultファイルを削除しないと作ったconfが動かないため消す。他に方法あったりするのかな。
+        if [ -f "$NGINX_ENABLE/default" ]; then
+            sudo rm -rf "$NGINX_ENABLE/default"
+        fi
+        log "正常に書き込みができました"
 
         if sudo nginx -t; then
             log "設定を反映中"
@@ -228,6 +239,7 @@ install_dependencies() {
             exit 1
         fi
         
+        log "ポートを確認中"
         if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
             log "opennig port ssh $SSH_PORT"
             sudo ufw allow $SSH_PORT/tcp
@@ -241,7 +253,7 @@ install_dependencies() {
         fi
         sudo ufw enable
         sudo ufw reload
-
+        log "設定完了"
     
     else
         # 2. MariaDB の確認とインストール (コマンド名は mariadb または mysql)
