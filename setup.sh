@@ -163,6 +163,22 @@ check_environment(){
         log "何らかのエラーがあります確認してください"
         exit 1
     fi
+    
+    log "ポートを確認中"
+    if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
+        log "opennig port ssh $SSH_PORT"
+        sudo ufw allow "$SSH_PORT/tcp"
+        # sudo ufw reload
+    fi
+
+    if ! sudo ufw status | grep -q "$NGINX_PORT/tcp"; then
+        log "ポート $NGINX_PORT を許可リストに追加中..."
+        sudo ufw allow "$NGINX_PORT/tcp"
+        # sudo ufw reload
+    fi
+    sudo ufw enable
+    sudo ufw reload
+    log "ポート確認完了"
 }
 # 依存関係をインストールする関数
 install_dependencies() {
@@ -233,27 +249,12 @@ install_dependencies() {
             sudo $CMD install -y ufw
         fi
 
-        log "NGINXの設定ファイルを作成中"
         if ! command -v nginx &> /dev/null; then
             log "nginxをインストールします"
             sudo $CMD install -y nginx
         fi
         
-        log "ポートを確認中"
-        if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
-            log "opennig port ssh $SSH_PORT"
-            sudo ufw allow "$SSH_PORT/tcp"
-            # sudo ufw reload
-        fi
-
-        if ! sudo ufw status | grep -q "$NGINX_PORT/tcp"; then
-            log "ポート $NGINX_PORT を許可リストに追加中..."
-            sudo ufw allow "$NGINX_PORT/tcp"
-            # sudo ufw reload
-        fi
-        sudo ufw enable
-        sudo ufw reload
-        log "設定完了"
+        log "インストール完了"
     
     else
         # 2. MariaDB の確認とインストール (コマンド名は mariadb または mysql)
