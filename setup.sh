@@ -136,6 +136,33 @@ check_environment(){
         log "npm確認完了確認できました"
     fi
     echo ""
+    
+    log "NGINXに書き込み中"
+    envsubst '${NGINX_PORT} ${LOCAL_HOST} ${VITE_PORT} ${BACKEND_PORT}' < $NGINX_TEMP > $NGINX_PATH
+    cd $PROJECT_ROOT
+    sudo mv "$NGINX_PATH" "$NGINX_DIR/$NGINX_PATH"
+    sudo ln -sf "$NGINX_DIR/$NGINX_PATH" "$NGINX_ENABLE/"
+    
+    if [ ! -f "$NGINX_DIR/$NGINX_PATH" ]; then
+        log "正常に書き込みができませんでしたnginx.conf.templateが存在してるか確認してください"
+        exit 1
+    fi
+
+    # defaultファイルを削除しないと作ったconfが動かないため消す。他に方法あったりするのかな。
+    if [ -f "$NGINX_ENABLE/default" ]; then
+        sudo rm -rf "$NGINX_ENABLE/default"
+    fi
+    log "正常に書き込みができました"
+
+    if sudo nginx -t; then
+        log "設定を反映中"
+        sudo systemctl start nginx
+        sudo systemctl reload nginx
+        log "反映完了"
+    else
+        log "何らかのエラーがあります確認してください"
+        exit 1
+    fi
 }
 # 依存関係をインストールする関数
 install_dependencies() {
@@ -210,33 +237,6 @@ install_dependencies() {
         if ! command -v nginx &> /dev/null; then
             log "nginxをインストールします"
             sudo $CMD install -y nginx
-        fi
-        
-        log "NGINXに書き込み中"
-        envsubst '${NGINX_PORT} ${LOCAL_HOST} ${VITE_PORT} ${BACKEND_PORT}' < $NGINX_TEMP > $NGINX_PATH
-        cd $PROJECT_ROOT
-        sudo mv "$NGINX_PATH" "$NGINX_DIR/$NGINX_PATH"
-        sudo ln -sf "$NGINX_DIR/$NGINX_PATH" "$NGINX_ENABLE/"
-        
-        if [ ! -f "$NGINX_DIR/$NGINX_PATH" ]; then
-            log "正常に書き込みができませんでしたnginx.conf.templateが存在してるか確認してください"
-            exit 1
-        fi
-
-        # defaultファイルを削除しないと作ったconfが動かないため消す。他に方法あったりするのかな。
-        if [ -f "$NGINX_ENABLE/default" ]; then
-            sudo rm -rf "$NGINX_ENABLE/default"
-        fi
-        log "正常に書き込みができました"
-
-        if sudo nginx -t; then
-            log "設定を反映中"
-            sudo systemctl start nginx
-            sudo systemctl reload nginx
-            log "反映完了"
-        else
-            log "何らかのエラーがあります確認してください"
-            exit 1
         fi
         
         log "ポートを確認中"
