@@ -208,7 +208,7 @@ install_dependencies() {
     if ! command -v python3 &> /dev/null; then
         log "Python3 をインストールします"
         
-        sudo $CMD install -y python3 python3-venv python3-pip
+        sudo $CMD install -y python3 python3.12-venv python3-pip
     fi
     # 2. Node.js の確認とインストール
     if ! command -v nodejs &> /dev/null; then
