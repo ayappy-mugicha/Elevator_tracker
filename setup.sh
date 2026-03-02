@@ -216,6 +216,7 @@ install_dependencies() {
         cd $PROJECT_ROOT
         sudo mv "$NGINX_PATH" "$NGINX_DIR/$NGINX_PATH"
         sudo ln -sf "$NGINX_DIR/$NGINX_PATH" "$NGINX_ENABLE/"
+        sudo rm -rf "$NGINX_ENABLE/default"
 
         if sudo nginx -t; then
             log "設定を反映中"
