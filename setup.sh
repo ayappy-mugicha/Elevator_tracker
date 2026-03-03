@@ -89,7 +89,10 @@ check_environment(){
             exit 1
         fi
     fi
-    export $(grep -v '^#' $ENV_PATH | xargs)
+    set -a
+    source "$ENV_PATH"
+    set +a
+
     # データベースの接続確認
     log "データベースを確認中"
     # その後、既存のデータベース接続確認へ進む
@@ -106,6 +109,7 @@ check_environment(){
             sudo mysql -u root -e "CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';"
             sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost';"
             sudo mysql -u root -e "FLUSH PRIVILEGES;"
+            
             log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
             log "データベースを作成中 $DB_NAME"
             # "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
@@ -113,6 +117,10 @@ check_environment(){
             -e"s/__TABLE_NAME__/$DB_TABLE/g" \
             "$SQL_TEMPLATE" | mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD"
             sleep 1
+            
+            sudo systemctl enable mariadb || sudo systemctl enable mysql
+            sudo systemctl start mariadb || sudo systemctl start mysql
+
             log "データベースを作成しました"
         else
             log "了解です。終了します"
