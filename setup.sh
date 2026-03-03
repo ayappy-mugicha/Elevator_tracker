@@ -111,7 +111,7 @@ check_environment(){
             # "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
             sed -e "s/__DB_NAME__/$DB_NAME/g" \
             -e "s/__TABLE_NAME__/$DB_TABLE/g" \
-            "$SQL_TEMPLATE" | mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER"
+            "$SQL_TEMPLATE" | mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_PASSWORD"
             sleep 1
             log "データベースを作成しました"
         else
