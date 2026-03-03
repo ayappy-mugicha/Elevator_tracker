@@ -32,7 +32,6 @@ log() {
     fi
     # DEBUG_MODE=false    
 }
-export $(grep -v '^#' $ENV_PATH | xargs)
 
 check_environment(){
     log "仮想環境の確認中"
@@ -83,17 +82,17 @@ check_environment(){
             ask_and_set "DB_NAMEを設定してください" "DB_NAME"
             
             log ".envファイルを作成しました"
+            
             sleep 1
         else
             log "了解です。終了します"
             exit 1
         fi
     fi
-
+    export $(grep -v '^#' $ENV_PATH | xargs)
     # データベースの接続確認
     log "データベースを確認中"
     # その後、既存のデータベース接続確認へ進む
-    log "データベースを確認中"
     if mysql -u "$DB_USER" -p"${DB_PASSWORD}" -h "$DB_HOST" -e "USE $DB_NAME" >/dev/null 2>&1; then
         log "データベース '$DB_NAME' を確認できました。"
     else
@@ -110,9 +109,9 @@ check_environment(){
             log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
             log "データベースを作成中 $DB_NAME"
             # "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
-            sed -e "s/__DB_NAME__/${DB_NAME}/g" \
-            -e "s/__TABLE_NAME__/${DB_TABLE}/g" \
-            "$SQL_TEMPLATE" | mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}"
+            sed -e "s/__DB_NAME__/$DB_NAME/g" \
+            -e "s/__TABLE_NAME__/$DB_TABLE/g" \
+            "$SQL_TEMPLATE" | mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER"
             sleep 1
             log "データベースを作成しました"
         else
