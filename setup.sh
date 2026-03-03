@@ -168,18 +168,14 @@ check_environment(){
     fi
     
     log "ポートを確認中"
-    if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
-        log "opennig port ssh $SSH_PORT"
-        sudo ufw allow "$SSH_PORT/tcp"
-        sudo ufw allow from $LOCAL_HOST
-        # sudo ufw reload
-    fi
+    sudo ufw allow from $LOCAL_HOST
 
-    if ! sudo ufw status | grep -q "$NGINX_PORT/tcp"; then
-        log "ポート $NGINX_PORT を許可リストに追加中..."
-        sudo ufw allow "$NGINX_PORT/tcp"
-        # sudo ufw reload
-    fi
+    for port in $SSH_PORT $NGINX_PORT; do
+        if ! sudo ufw status | grep -q "$port/tcp"; then
+            log "ポート $port を許可リストに追加中..."
+            sudo ufw allow "$port/tcp"
+        fi
+    done
     sudo ufw enable
     sudo ufw reload
     log "ポート確認完了"
