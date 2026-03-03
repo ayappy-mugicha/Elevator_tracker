@@ -171,7 +171,7 @@ check_environment(){
     if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
         log "opennig port ssh $SSH_PORT"
         sudo ufw allow "$SSH_PORT/tcp"
-        sudo ufw allow from 127.0.0.1
+        sudo ufw allow from $LOCAL_HOST
         # sudo ufw reload
     fi
 
@@ -188,8 +188,9 @@ check_environment(){
 install_dependencies() {
     log "依存関係の確認中"
     
+    # OS_COMMANDSに raspbian を追加
     declare -A OS_COMMANDS=(
-        [debian]="apt" [ubuntu]="apt" [fedora]="dnf" [arch]="pacman"
+        [debian]="apt" [ubuntu]="apt" [raspbian]="apt" [fedora]="dnf" [arch]="pacman"
         [opensuse]="zypper" [centos]="dnf" [rhel]="dnf" [amzn]="dnf"
     )
 
@@ -205,84 +206,45 @@ install_dependencies() {
     if [ -z "$CMD" ]; then
         log "対応していないOSです: $OS_NAME"; exit 1
     fi
+
+    log "パッケージリストを更新中..."
     sudo $CMD update -y
-    sudo $CMD upgrade -y
 
-    # 1. Python の確認とインストール
-    if ! command -v python3.12 &> /dev/null; then
+    # 1. Python の確認 (バージョン固定をやめ、標準の python3-venv を利用)
+    if ! command -v python3 &> /dev/null; then
         log "Python3 をインストールします"
-        
-        sudo $CMD install -y python3.12 python3.12-venv python3.12-pip
-    fi
-    # 2. Node.js の確認とインストール
-    if ! command -v nodejs &> /dev/null; then
-        log "Node.js をインストールします"
-        sudo $CMD install -y nodejs npm
+        sudo $CMD install -y python3 python3-pip python3-venv
     fi
 
-    if [[ "$OS_NAME" == "ubuntu" || "$OS_NAME" == "debian" ]]; then
-        # install python
-        if ! python3 -m venv --help &> /dev/null; then
-            log "python3-venv をインストールします"
-            # Ubuntu 24.04 等で必要な python3.12-venv を含め、幅広く試行
-            sudo $CMD install -y python3.12-venv # || sudo $CMD install -y python3.12-venv
-            PY_VER=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')
-            log "検出されたPythonバージョン: $PY_VER"
-            
-            # python3.12-venv などの具体的なパッケージ名を指定してインストール
-            sudo $CMD update -y
-            sudo $CMD install -y "python${PY_VER}-venv" || sudo $CMD install -y python3-venv
-            
+    # 2. Node.js (ラズパイ対応版)
+    if ! command -v node &> /dev/null; then
+        log "Node.js をインストールします"
+        if [[ "$OS_NAME" == "raspbian" || "$OS_NAME" == "debian" || "$OS_NAME" == "ubuntu" ]]; then
+            # ラズパイOS/Debian系向けの標準的な導入
+            sudo $CMD install -y nodejs npm
         fi
-        # 2. MySQL の確認とインストール (コマンド名は mysql)
-        if ! command -v mysql &> /dev/null; then
-            log "MySQL をインストールします"
+    fi
+
+    # 3. MySQL/MariaDB (ラズパイは MariaDB が標準)
+    if ! command -v mysql &> /dev/null; then
+        log "Database Server をインストールします"
+        if [[ "$OS_NAME" == "raspbian" || "$OS_NAME" == "debian" ]]; then
+            sudo $CMD install -y mariadb-server
+        else
             sudo $CMD install -y mysql-server
         fi
-        # 3. Node.js の確認とインストール
-        if ! command -v node &> /dev/null || [[ $(node -v | cut -d'.' -f1 | sed 's/v//') -lt 20 ]]; then
-            log "Node.js 20系をインストールまたはアップグレードします"
-            # NodeSource を使用して 20.x を導入
-            curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-            sudo $CMD install -y nodejs
-        fi
-        # ファイアウォールの設定 (ufw)
-        # Nginx の設定後でやっておいて。
-        if ! command -v ufw &> /dev/null; then
-            log "ufwをインストール中"
-            sudo $CMD install -y ufw
-        fi
-
-        if ! command -v nginx &> /dev/null; then
-            log "nginxをインストールします"
-            sudo $CMD install -y nginx
-        fi
-        
-        log "インストール完了"
-    
-    else
-        # 2. MariaDB の確認とインストール (コマンド名は mariadb または mysql)
-        if ! command -v mariadb &> /dev/null; then
-            log "MariaDB をインストールします"
-            sudo $CMD install -y mariadb-server # RedHat系などはMariaDBが一般的
-        fi
-        # # 3. firewalld の確認とインストール
-        # if ! command -v firewall-cmd &> /dev/null; then
-        #     log "firewalldをインストール中"
-        #     sudo $CMD install -y firewalld
-        #     sudo systemctl start firewalld
-        #     sudo systemctl enable firewalld
-        # fi
-        
-        # # ファイアウォールの設定 (firewalld)
-        # if sudo firewall-cmd --list-ports | grep -q "$VITE_PORT/tcp"; then
-        #     log "ポート $VITE_PORT は許可済み"
-        # else
-        #     log "ポート $VITE_PORT を許可リストに追加中..."
-        #     # sudo firewall-cmd --add-port=$VITE_PORT/tcp --permanent
-        #     # sudo firewall-cmd --reload
-        # fi
     fi
+
+    # 4. Nginx と ufw
+    for pkg in nginx ufw envsubst; do
+        if ! command -v $pkg &> /dev/null; then
+            # envsubst は gettext パッケージに含まれる
+            [[ "$pkg" == "envsubst" ]] && pkg="gettext"
+            log "$pkg をインストール中"
+            sudo $CMD install -y $pkg
+        fi
+    done
+
     log "依存関係の確認完了"
 }
 # -y オプションがあるとき
