@@ -5,11 +5,18 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, String, DateTime
 from sqlalchemy.sql import func
 from database.database import Base
+# 1. 自分のいる場所（appフォルダ）の絶対パスを取得
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 2. 一つ上の階層（親フォルダ）のパスを作る
+parent_dir = os.path.dirname(current_dir)
+# 3. Pythonの「探し物リスト」に親フォルダを追加！
+sys.path.append(parent_dir)
+from core import config
 
 class ElevatorStatus(Base):
     """ エレベーターの状態を格納するテーブル """
 
-    __tablename__ = "elevator_status"
+    __tablename__ = config.settings.DB_TABLE
     
     # id = column(Integer, primary_key = True, index = True)
     id: Mapped[int] = mapped_column(Integer, primary_key = True, index=True)

@@ -12,6 +12,7 @@ EXAMPLE_ENV_PATH="$PROJECT_ROOT/.env.example"
 VENV_NAME="Elevetor"
 ACTIVATE_VENV="$PROJECT_ROOT/$VENV_NAME/bin/activate"
 REQUIREMENTS="$BACKEND_DIR/requirements.txt"
+SQL_TEMPLATE="$BACKEND_DIR/app/database/create_tables.sql"
 RUN="$PROJECT_ROOT/run.sh"
 
 NGINX_DIR="/etc/nginx/sites-available"
@@ -107,8 +108,11 @@ check_environment(){
             sudo mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO '${DB_USER}'@'localhost';"
             sudo mysql -u root -e "FLUSH PRIVILEGES;"
             log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
-            log "データベースを作成中"
-            "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
+            log "データベースを作成中 $DB_NAME"
+            # "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
+            sed -e "s/__DB_NAME__/${DB_NAME}/g" \
+            -e "s/__TABLE_NAME__/${DB_TABLE}/g" \
+            "$SQL_TEMPLATE" | mysql -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}"
             sleep 1
             log "データベースを作成しました"
         else
@@ -168,6 +172,7 @@ check_environment(){
     if ! sudo ufw status | grep -q "$SSH_PORT/tcp"; then
         log "opennig port ssh $SSH_PORT"
         sudo ufw allow "$SSH_PORT/tcp"
+        sudo ufw allow from 127.0.0.1
         # sudo ufw reload
     fi
 
