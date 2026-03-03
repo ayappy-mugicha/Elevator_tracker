@@ -109,7 +109,9 @@ check_environment(){
             log "MySQLユーザーの設定が完了しました。再度接続を確認します..."
             log "データベースを作成中 $DB_NAME"
             # "$PROJECT_ROOT/$VENV_NAME/bin/python" "$BACKEND_DIR/app/database/create_tables.py"
-            sed -e "s/__DB_NAME__/$DB_NAME/g" \ -e "s/__TABLE_NAME__/$DB_TABLE/g" \ "$SQL_TEMPLATE" | mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD"
+            sed -e"s/__DB_NAME__/$DB_NAME/g" \
+            -e"s/__TABLE_NAME__/$DB_TABLE/g" \
+            "$SQL_TEMPLATE" | mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USER" -p"$DB_PASSWORD"
             sleep 1
             log "データベースを作成しました"
         else
