@@ -224,7 +224,7 @@ install_dependencies() {
     # 3. MySQL/MariaDB (ラズパイは MariaDB が標準)
     if ! command -v mysql &> /dev/null; then
         log "Database Server をインストールします"
-        if [[ "$OS_NAME" == "raspbian" || "$OS_NAME" == "debian" ]]; then
+        if [[ "$OS_NAME" == "ubuntu" ]]; then
             sudo $CMD install -y mariadb-server
         else
             sudo $CMD install -y mysql-server
