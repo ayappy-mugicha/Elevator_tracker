@@ -225,9 +225,9 @@ install_dependencies() {
     if ! command -v mysql &> /dev/null; then
         log "Database Server をインストールします"
         if [[ "$OS_NAME" == "ubuntu" ]]; then
-            sudo $CMD install -y mariadb-server
-        else
             sudo $CMD install -y mysql-server
+        else
+            sudo $CMD install -y mariadb-server
         fi
     fi
 
